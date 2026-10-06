@@ -1,6 +1,13 @@
 package com.bar.gym.ui
 
+import android.Manifest
 import android.app.Application
+import android.app.NotificationManager
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.foundation.BorderStroke
@@ -113,6 +120,13 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
     }
+    val ctx = LocalContext.current
+    val askNotif = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) { // once per screen visit; denial just means in-app countdown only
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) askNotif.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
     val l = loaded ?: return
     val workout = l.workout
     if (workout == null) {
@@ -203,6 +217,8 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
         val left = ends - System.currentTimeMillis()
         if (left > 0) {
             delay(left)
+            // the "Rest over" notification channel vibrates; only buzz here if it can't be shown
+            if (context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() == true) return@LaunchedEffect
             @Suppress("DEPRECATION")
             context.getSystemService(Vibrator::class.java)
                 ?.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
