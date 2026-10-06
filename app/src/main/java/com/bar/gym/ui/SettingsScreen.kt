@@ -2,11 +2,9 @@ package com.bar.gym.ui
 
 import android.app.Application
 import android.app.LocaleManager
+import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
-import androidx.compose.ui.res.stringResource
-import com.bar.gym.R
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -18,12 +16,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
+import com.bar.gym.R
 import com.bar.gym.ThemeMode
 import com.bar.gym.data.*
 import com.bar.gym.timer.RestTimer

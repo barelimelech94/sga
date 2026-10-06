@@ -1,6 +1,5 @@
 package com.bar.gym.timer
 
-import com.bar.gym.R
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -13,6 +12,7 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
 import com.bar.gym.MainActivity
+import com.bar.gym.R
 import com.bar.gym.data.GymDao
 import com.bar.gym.data.Workout
 

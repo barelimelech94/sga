@@ -1,7 +1,5 @@
 package com.bar.gym.ui
 
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.app.Application
 import android.app.NotificationManager
@@ -9,6 +7,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -39,10 +39,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
+import com.bar.gym.R
 import com.bar.gym.data.SessionExercise
 import com.bar.gym.data.SetLog
 import com.bar.gym.data.Workout
-import com.bar.gym.R
 import com.bar.gym.domain.*
 import com.bar.gym.timer.RestTimer
 import kotlinx.coroutines.ExperimentalCoroutinesApi

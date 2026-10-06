@@ -1,11 +1,11 @@
 package com.bar.gym.timer
 
-import com.bar.gym.R
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.bar.gym.R
 
 /** Fires when the rest alarm goes off. Touches no database: the in-app banner derives "Rest over" from restEndsAt. */
 class RestAlarmReceiver : BroadcastReceiver() {

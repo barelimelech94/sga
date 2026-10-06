@@ -1,9 +1,9 @@
 package com.bar.gym.ui
 
-import com.bar.gym.R
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.bar.gym.R
 
 /** Yes/no dialog. It never hides itself: the caller clears its own state inside [onConfirm] and [onDismiss]. */
 @Composable

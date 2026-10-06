@@ -1,8 +1,5 @@
 package com.bar.gym.ui
 
-import com.bar.gym.R
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,11 +9,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
+import com.bar.gym.R
 import com.bar.gym.domain.HistoryPoint
 import com.bar.gym.domain.formatKg
 import com.bar.gym.domain.historyPoints

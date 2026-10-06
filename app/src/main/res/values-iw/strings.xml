@@ -24,7 +24,7 @@
     <string name="unit_kg">ק״ג</string>
     <string name="unit_reps">חזרות</string>
     <string name="save_changes_title">לשמור את השינויים?</string>
-    <string name="update_named">“%1$s” יעודכן.</string>
+    <string name="update_named">\"%1$s\" יעודכן.</string>
     <string name="discard_changes_title">לצאת בלי לשמור?</string>
     <string name="unsaved_changes">יש שינויים שלא נשמרו.</string>
     <plurals name="exercise_count">
@@ -38,9 +38,9 @@
         <item quantity="other">%d אימונים</item>
     </plurals>
     <plurals name="workout_count">
-        <item quantity="one">אימון אחד</item>
-        <item quantity="two">שני אימונים</item>
-        <item quantity="other">%d אימונים</item>
+        <item quantity="one">אימון אחד שבוצע</item>
+        <item quantity="two">שני אימונים שבוצעו</item>
+        <item quantity="other">%d אימונים שבוצעו</item>
     </plurals>
 
     <!-- sessions -->
@@ -53,7 +53,7 @@
     <string name="finish_and_start">סיום והתחלה</string>
     <string name="finish_and_start_text">לסיים את האימון הפעיל (%1$s) ולהתחיל את האימון הזה?</string>
     <string name="delete_session_title">למחוק את האימון?</string>
-    <string name="delete_session_text">למחוק את “%1$s”? אימונים קודמים נשמרים.</string>
+    <string name="delete_session_text">למחוק את \"%1$s\"? היסטוריית האימונים נשמרת.</string>
 
     <!-- session editor -->
     <string name="new_session">אימון חדש</string>
@@ -61,13 +61,13 @@
     <string name="session_name">שם האימון</string>
     <string name="estimated_duration">משך משוער: %1$s</string>
     <string name="field_sets">סטים</string>
-    <string name="field_rest">מנוחה שנ׳</string>
-    <string name="field_work">עבודה שנ׳</string>
+    <string name="field_rest">מנוחה</string>
+    <string name="field_work">עבודה</string>
     <string name="remove_exercise_title">להסיר את התרגיל?</string>
-    <string name="remove_exercise_text">להסיר את “%1$s” מהאימון הזה?</string>
+    <string name="remove_exercise_text">להסיר את \"%1$s\" מהאימון הזה?</string>
 
     <!-- exercises -->
-    <string name="defaults_text">%1$s ק״ג · ⁦%2$d × %3$d⁩ · מנוחה %4$d שנ׳</string>
+    <string name="defaults_text">%1$s ק״ג · \u2066%2$d × %3$d\u2069 · מנוחה %4$d שנ׳</string>
     <string name="new_exercise">תרגיל חדש</string>
     <string name="edit_exercise">עריכת תרגיל</string>
     <string name="label_name">שם</string>
@@ -91,7 +91,7 @@
     <string name="no_sets_yet">עדיין לא נרשמו סטים</string>
     <string name="top_weight_title">משקל הסט הכבד ביותר בכל אימון</string>
     <string name="best_top_weight">המשקל הגבוה ביותר: %1$s ק״ג · %2$s</string>
-    <string name="weight_reps">⁦%1$s × %2$d⁩</string>
+    <string name="weight_reps">\u2066%1$s × %2$d\u2069</string>
 
     <!-- workout -->
     <string name="abort">ביטול אימון</string>
@@ -116,16 +116,16 @@
     <string name="rest_over">המנוחה הסתיימה</string>
     <string name="dismiss">סגירה</string>
     <string name="skip">דילוג</string>
-    <string name="add_30s">⁦+30⁩ שנ׳</string>
+    <string name="add_30s">\u2066+30\u2069 שנ׳</string>
     <string name="done_logged">בוצע · נרשמו %1$d</string>
     <string name="set_n_of">סט %1$d מתוך %2$d</string>
     <string name="last_time">בפעם הקודמת: %1$s</string>
     <string name="extra_set">סט נוסף</string>
     <string name="set_done">סיימתי סט</string>
-    <string name="undo_last_set">ביטול הסט האחרון</string>
-    <string name="undo_set_title">לבטל את הסט האחרון?</string>
+    <string name="undo_last_set">מחיקת הסט האחרון</string>
+    <string name="undo_set_title">למחוק את הסט האחרון?</string>
     <string name="undo_set_text">סט %1$d (%2$s ק״ג × %3$d) יימחק.</string>
-    <string name="undo_set_confirm">ביטול הסט</string>
+    <string name="undo_set_confirm">מחיקה</string>
     <string name="minus_unit">הפחתת %1$s</string>
     <string name="plus_unit">הוספת %1$s</string>
 
