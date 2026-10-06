@@ -1,7 +1,10 @@
 package com.bar.gym.ui
 
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import com.bar.gym.GymApp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,10 +16,19 @@ private val longArg = listOf(navArgument("id") { type = NavType.LongType })
 @Composable
 fun GymNav() {
     val nav = rememberNavController()
+    val dao = (LocalContext.current.applicationContext as GymApp).db.dao()
+    // Resume: an unfinished workout opens straight away, with "sessions" underneath. Once per launch.
+    var checked by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!checked) {
+            checked = true
+            if (dao.getActiveWorkout() != null) nav.navigate("workout")
+        }
+    }
     NavHost(nav, startDestination = "sessions") {
         composable("sessions") {
             SessionsScreen(
-                onStart = { _ -> /* step 4 creates the Workout row here */ nav.navigate("workout") },
+                onStart = { nav.navigate("workout") },
                 onResume = { nav.navigate("workout") },
                 onEdit = { nav.navigate("session/$it") },
                 onExercises = { nav.navigate("exercises") },
@@ -36,7 +48,7 @@ fun GymNav() {
         composable("exercise/{id}", longArg) { e ->
             ExerciseEditScreen(e.arguments!!.getLong("id"), onDone = { nav.popBackStack() })
         }
-        composable("workout") { Text("Workout") }
+        composable("workout") { WorkoutScreen(onGone = { nav.popBackStack("sessions", false) }) }
         composable("history/{exerciseId}", listOf(navArgument("exerciseId") { type = NavType.LongType })) { Text("History") }
         composable("settings") { Text("Settings") }
     }

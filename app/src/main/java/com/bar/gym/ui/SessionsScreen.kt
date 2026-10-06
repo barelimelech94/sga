@@ -21,6 +21,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
 import com.bar.gym.data.Session
+import com.bar.gym.data.Workout
+import com.bar.gym.timer.RestTimer
 import com.bar.gym.domain.estimateSeconds
 import com.bar.gym.domain.formatMinutes
 import kotlinx.coroutines.launch
@@ -31,12 +33,33 @@ class SessionsViewModel(app: Application) : AndroidViewModel(app) {
     val items = dao.observeAllSessionExercises()
     val active = dao.observeActiveWorkout()
     fun delete(id: Long) = viewModelScope.launch { dao.deleteSession(id) }
+
+    /** Never creates a second active workout: resumes it, or asks via [onConflict] if it is another session's. */
+    fun start(s: Session, onStarted: () -> Unit, onConflict: (Workout) -> Unit) = viewModelScope.launch {
+        val cur = dao.getActiveWorkout()
+        when {
+            cur == null -> { insertNew(s); onStarted() }
+            cur.sessionId == s.id -> onStarted()
+            else -> onConflict(cur)
+        }
+    }
+
+    fun finishAndStart(old: Workout, s: Session, onStarted: () -> Unit) = viewModelScope.launch {
+        RestTimer.cancel(getApplication(), dao, old)
+        dao.getWorkout(old.id)?.let { dao.updateWorkout(it.copy(finishedAt = System.currentTimeMillis(), restEndsAt = null)) }
+        insertNew(s)
+        onStarted()
+    }
+
+    private suspend fun insertNew(s: Session) {
+        dao.insertWorkout(Workout(sessionId = s.id, sessionName = s.name, startedAt = System.currentTimeMillis()))
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionsScreen(
-    onStart: (Long) -> Unit,
+    onStart: () -> Unit,
     onResume: () -> Unit,
     onEdit: (Long) -> Unit,
     onExercises: () -> Unit,
@@ -47,6 +70,7 @@ fun SessionsScreen(
     val all by vm.items.collectAsStateWithLifecycle(emptyList())
     val active by vm.active.collectAsStateWithLifecycle(null)
     var toDelete by remember { mutableStateOf<Session?>(null) }
+    var conflict by remember { mutableStateOf<Pair<Workout, Session>?>(null) }
     val bySession = all.groupBy { it.sessionId }
 
     Scaffold(
@@ -85,7 +109,7 @@ fun SessionsScreen(
                         Text(s.name, style = MaterialTheme.typography.titleLarge)
                         Text("${list.size} exercises · ${formatMinutes(estimateSeconds(list))}", style = MaterialTheme.typography.bodyLarge)
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Button(onClick = { onStart(s.id) }, Modifier.height(48.dp)) { Text("Start") }
+                            Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text("Start") }
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, "Edit") }
                             IconButton(onClick = { toDelete = s }, Modifier.size(48.dp)) { Icon(Icons.Default.Delete, "Delete") }
@@ -94,6 +118,15 @@ fun SessionsScreen(
                 }
             }
         }
+    }
+    conflict?.let { (old, s) ->
+        AlertDialog(
+            onDismissRequest = { conflict = null },
+            title = { Text("Workout in progress") },
+            text = { Text("Finish the workout in progress (${old.sessionName}) and start this one?") },
+            confirmButton = { TextButton(onClick = { vm.finishAndStart(old, s, onStart); conflict = null }) { Text("Finish and start") } },
+            dismissButton = { TextButton(onClick = { conflict = null }) { Text("Cancel") } },
+        )
     }
     toDelete?.let { s ->
         AlertDialog(

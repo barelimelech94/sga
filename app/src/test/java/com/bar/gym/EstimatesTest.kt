@@ -43,4 +43,22 @@ class EstimatesTest {
         assertEquals("12.5", formatKg(12.5))
         assertEquals("0", formatKg(0.0))
     }
+
+    @Test fun clock() {
+        assertEquals("0:00", formatClock(0))
+        assertEquals("1:15", formatClock(75))
+        assertEquals("1:02:05", formatClock(3725))
+        assertEquals("0:00", formatClock(-5))
+    }
+
+    @Test fun selection() {
+        val a = items(0)
+        assertEquals(a[0], defaultSelection(a, emptyList()))
+        // last log on a[2] (half done) wins over next-up a[0]
+        assertEquals(a[2], defaultSelection(a, listOf(log(a[2], 1))))
+        // last logged exercise complete -> next up
+        val done0 = (1..4).map { log(a[0], it) }
+        assertEquals(a[1], defaultSelection(a, done0))
+        assertNull(defaultSelection(a, a.flatMap { i -> (1..i.sets).map { log(i, it) } }))
+    }
 }
