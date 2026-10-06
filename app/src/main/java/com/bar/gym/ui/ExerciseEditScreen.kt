@@ -1,6 +1,7 @@
 package com.bar.gym.ui
 
 import android.app.Application
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -50,16 +51,23 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     var notes by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmSave by remember { mutableStateOf(false) }
+    var confirmLeave by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(emptyList<String>()) } // field values as loaded (the defaults, for a new exercise)
+    fun values() = listOf(name, body, weight, sets, reps, rest, work, notes)
+    fun dirty() = ready && values() != saved
 
     LaunchedEffect(id) {
         vm.load(id)?.let { e ->
             loaded = e; name = e.name; body = e.bodyPart; weight = formatKg(e.weightKg)
             sets = "${e.sets}"; reps = "${e.reps}"; rest = "${e.restSec}"; work = "${e.workSec}"; notes = e.notes
         }
+        saved = values()
         ready = true
     }
+    BackHandler(enabled = dirty()) { confirmLeave = true }
 
-    fun save() {
+    fun save(confirmed: Boolean = false) {
         val w = weight.trim().replace(',', '.').toDoubleOrNull()
         val s = sets.trim().toIntOrNull(); val r = reps.trim().toIntOrNull()
         val rs = rest.trim().toIntOrNull(); val wk = work.trim().toIntOrNull()
@@ -73,6 +81,7 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
             else -> null
         }
         if (error != null) return
+        if (loaded != null && dirty() && !confirmed) { confirmSave = true; return }
         vm.save(
             Exercise(id = loaded?.id ?: 0, name = name.trim(), bodyPart = body.trim(), weightKg = w!!, sets = s!!, reps = r!!,
                 restSec = rs!!, workSec = wk!!, notes = notes, archived = false),
@@ -84,7 +93,9 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
         topBar = {
             TopAppBar(
                 title = { Text(if (id == -1L) "New exercise" else "Edit exercise") },
-                navigationIcon = { IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = {
+                    IconButton(onClick = { if (dirty()) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                },
             )
         },
     ) { pad ->
@@ -107,7 +118,7 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text("Notes") })
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Button(onClick = ::save, Modifier.fillMaxWidth().height(52.dp)) { Text("Save") }
+            Button(onClick = { save() }, Modifier.fillMaxWidth().height(52.dp)) { Text("Save") }
             if (loaded != null) {
                 OutlinedButton(
                     onClick = { confirmDelete = true },
@@ -118,12 +129,31 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
         }
     }
     if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete exercise?") },
-            text = { Text("It will be removed from all sessions. Logged history is kept.") },
-            confirmButton = { TextButton(onClick = { confirmDelete = false; vm.delete(id, onDone) }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        ConfirmDialog(
+            title = "Delete exercise?",
+            text = "It will be removed from all sessions. Logged history is kept.",
+            confirm = "Delete",
+            onConfirm = { confirmDelete = false; vm.delete(id, onDone) },
+            onDismiss = { confirmDelete = false },
+        )
+    }
+    if (confirmSave) {
+        ConfirmDialog(
+            title = "Save changes?",
+            text = "\"${name.trim()}\" will be updated.",
+            confirm = "Save",
+            onConfirm = { confirmSave = false; save(confirmed = true) },
+            onDismiss = { confirmSave = false },
+        )
+    }
+    if (confirmLeave) {
+        ConfirmDialog(
+            title = "Discard changes?",
+            text = "You have unsaved changes.",
+            confirm = "Discard",
+            onConfirm = { confirmLeave = false; onDone() },
+            onDismiss = { confirmLeave = false },
+            dismiss = "Keep editing",
         )
     }
 }

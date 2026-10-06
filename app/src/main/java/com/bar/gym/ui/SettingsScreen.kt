@@ -94,15 +94,13 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
         }
     }
     pending?.let { b ->
-        AlertDialog(
-            onDismissRequest = vm::dismiss,
-            title = { Text("Restore backup?") },
-            text = {
-                Text("Replace ALL current data with this backup? It contains ${b.exercises.size} exercises, " +
-                    "${b.sessions.size} sessions, ${b.workouts.size} workouts. This cannot be undone.")
-            },
-            confirmButton = { TextButton(onClick = vm::confirm) { Text("Replace") } },
-            dismissButton = { TextButton(onClick = vm::dismiss) { Text("Cancel") } },
+        ConfirmDialog(
+            title = "Restore backup?",
+            text = "Replace ALL current data with this backup? It contains ${b.exercises.size} exercises, " +
+                "${b.sessions.size} sessions, ${b.workouts.size} workouts. This cannot be undone.",
+            confirm = "Replace",
+            onConfirm = vm::confirm,
+            onDismiss = vm::dismiss,
         )
     }
 }

@@ -89,7 +89,7 @@ fun SessionsScreen(
     ) { pad ->
         LazyColumn(
             Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             active?.let { w ->
@@ -120,21 +120,21 @@ fun SessionsScreen(
         }
     }
     conflict?.let { (old, s) ->
-        AlertDialog(
-            onDismissRequest = { conflict = null },
-            title = { Text("Workout in progress") },
-            text = { Text("Finish the workout in progress (${old.sessionName}) and start this one?") },
-            confirmButton = { TextButton(onClick = { vm.finishAndStart(old, s, onStart); conflict = null }) { Text("Finish and start") } },
-            dismissButton = { TextButton(onClick = { conflict = null }) { Text("Cancel") } },
+        ConfirmDialog(
+            title = "Workout in progress",
+            text = "Finish the workout in progress (${old.sessionName}) and start this one?",
+            confirm = "Finish and start",
+            onConfirm = { vm.finishAndStart(old, s, onStart); conflict = null },
+            onDismiss = { conflict = null },
         )
     }
     toDelete?.let { s ->
-        AlertDialog(
-            onDismissRequest = { toDelete = null },
-            title = { Text("Delete session?") },
-            text = { Text("Delete \"${s.name}\"? Past workouts are kept.") },
-            confirmButton = { TextButton(onClick = { vm.delete(s.id); toDelete = null }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { toDelete = null }) { Text("Cancel") } },
+        ConfirmDialog(
+            title = "Delete session?",
+            text = "Delete \"${s.name}\"? Past workouts are kept.",
+            confirm = "Delete",
+            onConfirm = { vm.delete(s.id); toDelete = null },
+            onDismiss = { toDelete = null },
         )
     }
 }

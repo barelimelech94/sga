@@ -1,15 +1,16 @@
 package com.bar.gym.ui
 
 import android.app.Application
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,8 @@ import com.bar.gym.domain.estimateSeconds
 import com.bar.gym.domain.formatKg
 import com.bar.gym.domain.formatMinutes
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /** Editable row: raw strings while typing, parsed when estimating/saving. */
 data class Row(val key: Long, val exerciseId: Long, val weight: String, val sets: String, val reps: String, val rest: String, val work: String) {
@@ -50,6 +53,9 @@ class SessionEditViewModel(app: Application) : AndroidViewModel(app) {
     var name by mutableStateOf("")
     val rows = mutableStateListOf<Row>()
     private var nextKey = 1L
+    private var savedName = ""
+    private var savedRows = emptyList<Row>()
+    val dirty get() = name != savedName || rows.toList() != savedRows
 
     private fun SessionExercise.toRow() = Row(nextKey++, exerciseId, formatKg(weightKg), "$sets", "$reps", "$restSec", "$workSec")
 
@@ -61,16 +67,18 @@ class SessionEditViewModel(app: Application) : AndroidViewModel(app) {
         rows.clear()
         // ponytail: one-shot read of current items; flow isn't needed while editing
         rows.addAll(dao.getSessionExercises(id).map { it.toRow() })
+        savedName = name
+        savedRows = rows.toList()
     }
 
     fun add(e: Exercise) {
         rows.add(Row(nextKey++, e.id, formatKg(e.weightKg), "${e.sets}", "${e.reps}", "${e.restSec}", "${e.workSec}"))
     }
 
-    fun move(i: Int, delta: Int) {
-        val j = i + delta
-        if (j !in rows.indices) return
-        val r = rows.removeAt(i); rows.add(j, r)
+    /** Keys, not list indices: the list also holds the name field, the estimate and the add button. */
+    fun move(fromKey: Any, toKey: Any) {
+        val i = rows.indexOfFirst { it.key == fromKey }; val j = rows.indexOfFirst { it.key == toKey }
+        if (i >= 0 && j >= 0) rows.add(j, rows.removeAt(i))
     }
 
     fun estimate() = estimateSeconds(rows.mapIndexed { i, r -> r.toItem(0, i) })
@@ -92,51 +100,73 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
     val bank by vm.bank.collectAsStateWithLifecycle(emptyList())
     var showPicker by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(emptySet<Long>()) }
+    var removing by remember { mutableStateOf<Row?>(null) }
+    var confirmSave by remember { mutableStateOf(false) }
+    var confirmLeave by remember { mutableStateOf(false) }
     LaunchedEffect(id) { vm.load(id); ready = true }
     val names = bank.associate { it.id to it.name }
+    val listState = rememberLazyListState()
+    val reorder = rememberReorderableLazyListState(listState) { from, to -> vm.move(from.key, to.key) }
+    BackHandler(enabled = vm.dirty) { confirmLeave = true }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(if (id == -1L) "New session" else "Edit session") },
-                navigationIcon = { IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = { TextButton(onClick = { vm.save(id, onDone) }, enabled = vm.name.isNotBlank()) { Text("Save") } },
+                navigationIcon = {
+                    IconButton(onClick = { if (vm.dirty) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { if (id != -1L && vm.dirty) confirmSave = true else vm.save(id, onDone) },
+                        enabled = vm.name.isNotBlank(),
+                    ) { Text("Save") }
+                },
             )
         },
     ) { pad ->
         if (!ready) return@Scaffold
         LazyColumn(
             Modifier.padding(pad).fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            item(key = "name") {
                 OutlinedTextField(vm.name, { vm.name = it }, Modifier.fillMaxWidth(), label = { Text("Session name") }, singleLine = true)
             }
-            item {
+            item(key = "estimate") {
                 Text("Estimated duration: ${formatMinutes(vm.estimate())}", style = MaterialTheme.typography.titleMedium)
             }
-            itemsIndexed(vm.rows, key = { _, r -> r.key }) { i, r ->
-                fun upd(n: Row) { vm.rows[i] = n }
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(names[r.exerciseId] ?: "(removed exercise)", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                            IconButton(onClick = { vm.move(i, -1) }, Modifier.size(48.dp), enabled = i > 0) { Icon(Icons.Default.ArrowUpward, "Move up") }
-                            IconButton(onClick = { vm.move(i, 1) }, Modifier.size(48.dp), enabled = i < vm.rows.lastIndex) { Icon(Icons.Default.ArrowDownward, "Move down") }
-                            IconButton(onClick = { vm.rows.removeAt(i) }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, "Remove") }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Field("kg", r.weight, KeyboardType.Decimal, Modifier.weight(1.2f)) { upd(r.copy(weight = it)) }
-                            Field("sets", r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
-                            Field("reps", r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
-                            Field("rest s", r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
-                            Field("work s", r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
+            items(vm.rows, key = { it.key }) { r ->
+                ReorderableItem(reorder, key = r.key) { isDragging ->
+                    val sel = r.key in selected
+                    fun upd(n: Row) { val i = vm.rows.indexOfFirst { it.key == n.key }; if (i >= 0) vm.rows[i] = n }
+                    Card(
+                        onClick = { selected = if (sel) selected - r.key else selected + r.key },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = if (sel) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.cardColors(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 6.dp else 0.dp),
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = {}, Modifier.size(48.dp).draggableHandle()) { Icon(Icons.Default.DragHandle, "Reorder") }
+                                Text(names[r.exerciseId] ?: "(removed exercise)", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, "Remove") }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Field("kg", r.weight, KeyboardType.Decimal, Modifier.weight(1.2f)) { upd(r.copy(weight = it)) }
+                                Field("sets", r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
+                                Field("reps", r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
+                                Field("rest s", r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
+                                Field("work s", r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
+                            }
                         }
                     }
                 }
             }
-            item {
+            item(key = "add") {
                 Button(onClick = { showPicker = true }, Modifier.fillMaxWidth().height(52.dp)) { Text("Add exercise") }
             }
         }
@@ -162,6 +192,34 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
             },
             confirmButton = {},
             dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
+        )
+    }
+    removing?.let { r ->
+        ConfirmDialog(
+            title = "Remove exercise?",
+            text = "Remove \"${names[r.exerciseId] ?: "(removed exercise)"}\" from this session?",
+            confirm = "Remove",
+            onConfirm = { vm.rows.removeAll { it.key == r.key }; selected = selected - r.key; removing = null },
+            onDismiss = { removing = null },
+        )
+    }
+    if (confirmSave) {
+        ConfirmDialog(
+            title = "Save changes?",
+            text = "\"${vm.name.trim()}\" will be updated.",
+            confirm = "Save",
+            onConfirm = { confirmSave = false; vm.save(id, onDone) },
+            onDismiss = { confirmSave = false },
+        )
+    }
+    if (confirmLeave) {
+        ConfirmDialog(
+            title = "Discard changes?",
+            text = "You have unsaved changes.",
+            confirm = "Discard",
+            onConfirm = { confirmLeave = false; onDone() },
+            onDismiss = { confirmLeave = false },
+            dismiss = "Keep editing",
         )
     }
 }
