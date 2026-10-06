@@ -5,17 +5,21 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
+import com.bar.gym.ThemeMode
 import com.bar.gym.data.*
 import com.bar.gym.timer.RestTimer
 import java.io.IOException
@@ -26,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val INVALID = "That file is not a valid gym backup — nothing was changed."
+
+private val themes = listOf(ThemeMode.SYSTEM to "System", ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark")
 
 class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
     private val db = (app as GymApp).db
@@ -77,13 +83,25 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
     val pending by vm.pending.collectAsStateWithLifecycle()
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let(vm::export) }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::read) }
+    val app = LocalContext.current.applicationContext as GymApp
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text("Backup") },
+            title = { Text("Settings") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
         )
     }) { pad ->
-        Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.padding(pad).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Theme", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                themes.forEachIndexed { i, (mode, label) ->
+                    SegmentedButton(
+                        selected = app.themeMode == mode,
+                        onClick = { app.themeMode = mode },
+                        shape = SegmentedButtonDefaults.itemShape(i, themes.size),
+                    ) { Text(label) }
+                }
+            }
+            Text("Backup", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Text("Your data is stored only on this phone. Export a backup before uninstalling or changing phones.")
             Button(onClick = { exportLauncher.launch("gym-backup-${LocalDate.now()}.json") }, Modifier.fillMaxWidth()) { Text("Export backup") }
             OutlinedButton(

@@ -3,6 +3,7 @@ package com.bar.gym.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -10,7 +11,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.bar.gym.R
 import com.bar.gym.domain.formatKg
 
 /** Simple line chart: [labels] are shown for the first and last point only. */
@@ -19,9 +22,11 @@ fun LineChart(values: List<Double>, labels: List<String>, modifier: Modifier) {
     val line = MaterialTheme.colorScheme.primary
     val grid = MaterialTheme.colorScheme.outlineVariant
     val text = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
+    val res = LocalContext.current.resources
+    val face = remember { res.getFont(R.font.rubik) }
     Canvas(modifier) {
         if (values.isEmpty()) return@Canvas
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = text; textSize = 12.dp.toPx() }
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = text; textSize = 12.dp.toPx(); typeface = face }
         val left = 44.dp.toPx(); val right = 12.dp.toPx(); val top = 12.dp.toPx(); val bottom = 28.dp.toPx()
         val w = size.width - left - right; val h = size.height - top - bottom
         val lo = values.min(); val hi = values.max()
