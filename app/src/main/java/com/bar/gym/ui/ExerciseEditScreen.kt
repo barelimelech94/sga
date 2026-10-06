@@ -1,5 +1,7 @@
 package com.bar.gym.ui
 
+import com.bar.gym.R
+import androidx.compose.ui.res.stringResource
 import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
@@ -49,7 +51,7 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     var rest by remember { mutableStateOf("120") }
     var work by remember { mutableStateOf("40") }
     var notes by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<Int?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmSave by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
@@ -72,12 +74,12 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
         val s = sets.trim().toIntOrNull(); val r = reps.trim().toIntOrNull()
         val rs = rest.trim().toIntOrNull(); val wk = work.trim().toIntOrNull()
         error = when {
-            name.isBlank() -> "Name is required"
-            w == null || w < 0 || w.isNaN() || w.isInfinite() -> "Weight must be a number, 0 or more"
-            s == null || s < 1 -> "Sets must be at least 1"
-            r == null || r < 1 -> "Reps must be at least 1"
-            rs == null || rs < 0 -> "Rest must be 0 or more seconds"
-            wk == null || wk < 0 -> "Work must be 0 or more seconds"
+            name.isBlank() -> R.string.err_name_required
+            w == null || w < 0 || w.isNaN() || w.isInfinite() -> R.string.err_weight
+            s == null || s < 1 -> R.string.err_sets
+            r == null || r < 1 -> R.string.err_reps
+            rs == null || rs < 0 -> R.string.err_rest
+            wk == null || wk < 0 -> R.string.err_work
             else -> null
         }
         if (error != null) return
@@ -92,9 +94,9 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (id == -1L) "New exercise" else "Edit exercise") },
+                title = { Text(stringResource(if (id == -1L) R.string.new_exercise else R.string.edit_exercise)) },
                 navigationIcon = {
-                    IconButton(onClick = { if (dirty()) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = { if (dirty()) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
             )
         },
@@ -104,56 +106,56 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
             Modifier.padding(pad).padding(16.dp).fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true)
-            OutlinedTextField(body, { body = it }, Modifier.fillMaxWidth(), label = { Text("Body part") }, singleLine = true)
-            OutlinedTextField(weight, { weight = it }, Modifier.fillMaxWidth(), label = { Text("Weight (kg)") }, singleLine = true,
+            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_name)) }, singleLine = true)
+            OutlinedTextField(body, { body = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_body_part)) }, singleLine = true)
+            OutlinedTextField(weight, { weight = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_weight_kg)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-            OutlinedTextField(sets, { sets = it }, Modifier.fillMaxWidth(), label = { Text("Sets") }, singleLine = true,
+            OutlinedTextField(sets, { sets = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_sets)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            OutlinedTextField(reps, { reps = it }, Modifier.fillMaxWidth(), label = { Text("Reps") }, singleLine = true,
+            OutlinedTextField(reps, { reps = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_reps)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            OutlinedTextField(rest, { rest = it }, Modifier.fillMaxWidth(), label = { Text("Rest (sec)") }, singleLine = true,
+            OutlinedTextField(rest, { rest = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_rest_sec)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            OutlinedTextField(work, { work = it }, Modifier.fillMaxWidth(), label = { Text("Work (sec)") }, singleLine = true,
+            OutlinedTextField(work, { work = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_work_sec)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text("Notes") })
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Button(onClick = { save() }, Modifier.fillMaxWidth().height(52.dp)) { Text("Save") }
+            OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_notes)) })
+            error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+            Button(onClick = { save() }, Modifier.fillMaxWidth().height(52.dp)) { Text(stringResource(R.string.save)) }
             if (loaded != null) {
                 OutlinedButton(
                     onClick = { confirmDelete = true },
                     Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Delete") }
+                ) { Text(stringResource(R.string.delete)) }
             }
         }
     }
     if (confirmDelete) {
         ConfirmDialog(
-            title = "Delete exercise?",
-            text = "It will be removed from all sessions. Logged history is kept.",
-            confirm = "Delete",
+            title = stringResource(R.string.delete_exercise_title),
+            text = stringResource(R.string.delete_exercise_text),
+            confirm = stringResource(R.string.delete),
             onConfirm = { confirmDelete = false; vm.delete(id, onDone) },
             onDismiss = { confirmDelete = false },
         )
     }
     if (confirmSave) {
         ConfirmDialog(
-            title = "Save changes?",
-            text = "\"${name.trim()}\" will be updated.",
-            confirm = "Save",
+            title = stringResource(R.string.save_changes_title),
+            text = stringResource(R.string.update_named, name.trim()),
+            confirm = stringResource(R.string.save),
             onConfirm = { confirmSave = false; save(confirmed = true) },
             onDismiss = { confirmSave = false },
         )
     }
     if (confirmLeave) {
         ConfirmDialog(
-            title = "Discard changes?",
-            text = "You have unsaved changes.",
-            confirm = "Discard",
+            title = stringResource(R.string.discard_changes_title),
+            text = stringResource(R.string.unsaved_changes),
+            confirm = stringResource(R.string.discard),
             onConfirm = { confirmLeave = false; onDone() },
             onDismiss = { confirmLeave = false },
-            dismiss = "Keep editing",
+            dismiss = stringResource(R.string.keep_editing),
         )
     }
 }

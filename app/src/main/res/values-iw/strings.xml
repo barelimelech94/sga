@@ -1,0 +1,156 @@
+<resources>
+    <!-- common -->
+    <string name="back">חזרה</string>
+    <string name="cancel">ביטול</string>
+    <string name="save">שמירה</string>
+    <string name="delete">מחיקה</string>
+    <string name="remove">הסרה</string>
+    <string name="edit">עריכה</string>
+    <string name="start">התחלה</string>
+    <string name="resume">המשך</string>
+    <string name="finish">סיום</string>
+    <string name="replace">החלפה</string>
+    <string name="discard">יציאה בלי לשמור</string>
+    <string name="keep_editing">המשך עריכה</string>
+    <string name="keep_going">להמשיך באימון</string>
+    <string name="other">אחר</string>
+    <string name="add_exercise">הוספת תרגיל</string>
+    <string name="exercise_bank">מאגר תרגילים</string>
+    <string name="history">היסטוריה</string>
+    <string name="reorder">שינוי סדר</string>
+    <string name="removed_exercise">(תרגיל שנמחק)</string>
+    <string name="removed_short">(נמחק)</string>
+    <string name="minutes_format">%d דק׳</string>
+    <string name="unit_kg">ק״ג</string>
+    <string name="unit_reps">חזרות</string>
+    <string name="save_changes_title">לשמור את השינויים?</string>
+    <string name="update_named">“%1$s” יעודכן.</string>
+    <string name="discard_changes_title">לצאת בלי לשמור?</string>
+    <string name="unsaved_changes">יש שינויים שלא נשמרו.</string>
+    <plurals name="exercise_count">
+        <item quantity="one">תרגיל אחד</item>
+        <item quantity="two">שני תרגילים</item>
+        <item quantity="other">%d תרגילים</item>
+    </plurals>
+    <plurals name="session_count">
+        <item quantity="one">אימון אחד</item>
+        <item quantity="two">שני אימונים</item>
+        <item quantity="other">%d אימונים</item>
+    </plurals>
+    <plurals name="workout_count">
+        <item quantity="one">אימון אחד</item>
+        <item quantity="two">שני אימונים</item>
+        <item quantity="other">%d אימונים</item>
+    </plurals>
+
+    <!-- sessions -->
+    <string name="sessions_title">אימונים</string>
+    <string name="settings">הגדרות</string>
+    <string name="add_session">הוספת אימון</string>
+    <string name="workout_in_progress">אימון פעיל</string>
+    <string name="workout_in_progress_named">אימון פעיל: %1$s</string>
+    <string name="session_summary">%1$s · %2$s</string>
+    <string name="finish_and_start">סיום והתחלה</string>
+    <string name="finish_and_start_text">לסיים את האימון הפעיל (%1$s) ולהתחיל את האימון הזה?</string>
+    <string name="delete_session_title">למחוק את האימון?</string>
+    <string name="delete_session_text">למחוק את “%1$s”? אימונים קודמים נשמרים.</string>
+
+    <!-- session editor -->
+    <string name="new_session">אימון חדש</string>
+    <string name="edit_session">עריכת אימון</string>
+    <string name="session_name">שם האימון</string>
+    <string name="estimated_duration">משך משוער: %1$s</string>
+    <string name="field_sets">סטים</string>
+    <string name="field_rest">מנוחה שנ׳</string>
+    <string name="field_work">עבודה שנ׳</string>
+    <string name="remove_exercise_title">להסיר את התרגיל?</string>
+    <string name="remove_exercise_text">להסיר את “%1$s” מהאימון הזה?</string>
+
+    <!-- exercises -->
+    <string name="defaults_text">%1$s ק״ג · ⁦%2$d × %3$d⁩ · מנוחה %4$d שנ׳</string>
+    <string name="new_exercise">תרגיל חדש</string>
+    <string name="edit_exercise">עריכת תרגיל</string>
+    <string name="label_name">שם</string>
+    <string name="label_body_part">חלק גוף</string>
+    <string name="label_weight_kg">משקל (ק״ג)</string>
+    <string name="label_sets">סטים</string>
+    <string name="label_reps">חזרות</string>
+    <string name="label_rest_sec">מנוחה (שנ׳)</string>
+    <string name="label_work_sec">עבודה (שנ׳)</string>
+    <string name="label_notes">הערות</string>
+    <string name="err_name_required">יש להזין שם</string>
+    <string name="err_weight">המשקל חייב להיות מספר, 0 או יותר</string>
+    <string name="err_sets">מספר הסטים חייב להיות לפחות 1</string>
+    <string name="err_reps">מספר החזרות חייב להיות לפחות 1</string>
+    <string name="err_rest">המנוחה חייבת להיות 0 שניות או יותר</string>
+    <string name="err_work">העבודה חייבת להיות 0 שניות או יותר</string>
+    <string name="delete_exercise_title">למחוק את התרגיל?</string>
+    <string name="delete_exercise_text">התרגיל יוסר מכל האימונים. ההיסטוריה שנרשמה נשמרת.</string>
+
+    <!-- history -->
+    <string name="no_sets_yet">עדיין לא נרשמו סטים</string>
+    <string name="top_weight_title">משקל הסט הכבד ביותר בכל אימון</string>
+    <string name="best_top_weight">המשקל הגבוה ביותר: %1$s ק״ג · %2$s</string>
+    <string name="weight_reps">⁦%1$s × %2$d⁩</string>
+
+    <!-- workout -->
+    <string name="abort">ביטול אימון</string>
+    <string name="workout_progress">%1$d מתוך %2$d סטים בוצעו · נותרו בערך %3$s</string>
+    <string name="next_badge">הבא</string>
+    <string name="weight_kg_reps">%1$s ק״ג × %2$d</string>
+    <string name="done">בוצע</string>
+    <string name="finish_workout_title">לסיים את האימון?</string>
+    <plurals name="sets_not_done">
+        <item quantity="one">סט אחד מהתוכנית עדיין לא בוצע.</item>
+        <item quantity="two">שני סטים מהתוכנית עדיין לא בוצעו.</item>
+        <item quantity="other">%d סטים מהתוכנית עדיין לא בוצעו.</item>
+    </plurals>
+    <string name="all_sets_done">כל הסטים בתוכנית בוצעו.</string>
+    <string name="abort_workout_title">לבטל את האימון?</string>
+    <string name="nothing_logged">עדיין לא נרשם דבר.</string>
+    <plurals name="abort_logged_text">
+        <item quantity="one">האימון והסט שנרשם בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+        <item quantity="two">האימון ושני הסטים שנרשמו בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+        <item quantity="other">האימון ו־%d הסטים שנרשמו בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+    </plurals>
+    <string name="rest_over">המנוחה הסתיימה</string>
+    <string name="dismiss">סגירה</string>
+    <string name="skip">דילוג</string>
+    <string name="add_30s">⁦+30⁩ שנ׳</string>
+    <string name="done_logged">בוצע · נרשמו %1$d</string>
+    <string name="set_n_of">סט %1$d מתוך %2$d</string>
+    <string name="last_time">בפעם הקודמת: %1$s</string>
+    <string name="extra_set">סט נוסף</string>
+    <string name="set_done">סיימתי סט</string>
+    <string name="undo_last_set">ביטול הסט האחרון</string>
+    <string name="undo_set_title">לבטל את הסט האחרון?</string>
+    <string name="undo_set_text">סט %1$d (%2$s ק״ג × %3$d) יימחק.</string>
+    <string name="undo_set_confirm">ביטול הסט</string>
+    <string name="minus_unit">הפחתת %1$s</string>
+    <string name="plus_unit">הוספת %1$s</string>
+
+    <!-- notifications -->
+    <string name="channel_rest_timer">טיימר מנוחה</string>
+    <string name="channel_rest_over">המנוחה הסתיימה</string>
+    <string name="notif_resting">מנוחה</string>
+    <string name="notif_rest_over">המנוחה הסתיימה – הסט הבא</string>
+
+    <!-- settings -->
+    <string name="theme">ערכת נושא</string>
+    <string name="system">מערכת</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
+    <string name="language">שפה</string>
+    <string name="backup">גיבוי</string>
+    <string name="backup_note">הנתונים שלך שמורים רק בטלפון הזה. כדאי לייצא גיבוי לפני הסרת האפליקציה או החלפת טלפון.</string>
+    <string name="export_backup">ייצוא גיבוי</string>
+    <string name="import_backup">ייבוא גיבוי</string>
+    <string name="restore_title">לשחזר את הגיבוי?</string>
+    <string name="restore_text">להחליף את כל הנתונים הנוכחיים בגיבוי הזה? הוא כולל %1$s, %2$s ו־%3$s. אי אפשר לבטל פעולה זו.</string>
+    <string name="backup_saved">הגיבוי נשמר</string>
+    <string name="backup_save_failed">שמירת הגיבוי נכשלה: %1$s</string>
+    <string name="backup_invalid">הקובץ הזה אינו גיבוי תקין – לא בוצע שום שינוי.</string>
+    <string name="backup_invalid_reason">%1$s (%2$s)</string>
+    <string name="backup_restored">הגיבוי שוחזר: %1$s, %2$s ו־%3$s</string>
+    <string name="restore_failed">השחזור נכשל, הנתונים הקיימים נשמרו: %1$s</string>
+</resources>

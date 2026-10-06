@@ -1,5 +1,6 @@
 package com.bar.gym.timer
 
+import com.bar.gym.R
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -14,7 +15,7 @@ class RestAlarmReceiver : BroadcastReceiver() {
         nm.cancel(RestTimer.ONGOING_ID)
         val n = Notification.Builder(context, RestTimer.OVER_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Rest over — next set")
+            .setContentTitle(context.getString(R.string.notif_rest_over))
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setAutoCancel(true)

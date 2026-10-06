@@ -1,5 +1,7 @@
 package com.bar.gym.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.app.Application
 import android.app.NotificationManager
@@ -40,6 +42,7 @@ import com.bar.gym.GymApp
 import com.bar.gym.data.SessionExercise
 import com.bar.gym.data.SetLog
 import com.bar.gym.data.Workout
+import com.bar.gym.R
 import com.bar.gym.domain.*
 import com.bar.gym.timer.RestTimer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -160,15 +163,15 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     }
                 },
                 actions = {
-                    TextButton(onClick = { confirmAbort = true }) { Text("Abort", color = MaterialTheme.colorScheme.error, fontSize = 18.sp) }
-                    TextButton(onClick = { confirmFinish = true }) { Text("Finish", fontSize = 18.sp) }
+                    TextButton(onClick = { confirmAbort = true }) { Text(stringResource(R.string.abort), color = MaterialTheme.colorScheme.error, fontSize = 18.sp) }
+                    TextButton(onClick = { confirmFinish = true }) { Text(stringResource(R.string.finish), fontSize = 18.sp) }
                 },
             )
         },
     ) { pad ->
         Column(Modifier.padding(pad).imePadding().fillMaxSize()) {
             Text(
-                "$done / $total sets done · about ${formatMinutes(remainingSeconds(items, logs))} left",
+                stringResource(R.string.workout_progress, done, total, stringResource(R.string.minutes_format, roundMinutes(remainingSeconds(items, logs)))),
                 Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -192,41 +195,41 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     ) {
                         Row(Modifier.padding(12.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                if (isNext) Text("NEXT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-                                Text(names[it.exerciseId] ?: "(removed)", style = MaterialTheme.typography.titleMedium)
-                                Text("${formatKg(it.weightKg)} kg × ${it.reps}", style = MaterialTheme.typography.bodyMedium)
+                                if (isNext) Text(stringResource(R.string.next_badge), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                                Text(names[it.exerciseId] ?: stringResource(R.string.removed_short), style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.weight_kg_reps, formatKg(it.weightKg), it.reps), style = MaterialTheme.typography.bodyMedium)
                             }
-                            if (complete) Icon(Icons.Default.Check, "Done", Modifier.padding(end = 8.dp).size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                            if (complete) Icon(Icons.Default.Check, stringResource(R.string.done), Modifier.padding(end = 8.dp).size(28.dp), tint = MaterialTheme.colorScheme.primary)
                             Text("$d/${it.sets}", style = MaterialTheme.typography.headlineSmall)
                         }
                     }
                 }
             }
             if (selected != null) {
-                ExercisePanel(workout, selected, names[selected.exerciseId] ?: "(removed)", logs, vm)
+                ExercisePanel(workout, selected, names[selected.exerciseId] ?: stringResource(R.string.removed_short), logs, vm)
             }
         }
     }
 
     if (confirmFinish) {
         ConfirmDialog(
-            title = "Finish workout?",
-            text = if (done < total) "${total - done} planned sets are not done yet." else "All planned sets are done.",
-            confirm = "Finish",
+            title = stringResource(R.string.finish_workout_title),
+            text = if (done < total) pluralStringResource(R.plurals.sets_not_done, total - done, total - done) else stringResource(R.string.all_sets_done),
+            confirm = stringResource(R.string.finish),
             onConfirm = { confirmFinish = false; vm.finish() },
             onDismiss = { confirmFinish = false },
-            dismiss = "Keep going",
+            dismiss = stringResource(R.string.keep_going),
         )
     }
     if (confirmAbort) {
         ConfirmDialog(
-            title = "Abort workout?",
-            text = if (logs.isEmpty()) "Nothing has been logged yet."
-            else "The workout and its ${logs.size} logged sets will be deleted. This cannot be undone.",
-            confirm = "Abort",
+            title = stringResource(R.string.abort_workout_title),
+            text = if (logs.isEmpty()) stringResource(R.string.nothing_logged)
+            else pluralStringResource(R.plurals.abort_logged_text, logs.size, logs.size),
+            confirm = stringResource(R.string.abort),
             onConfirm = { confirmAbort = false; vm.abort() },
             onDismiss = { confirmAbort = false },
-            dismiss = "Keep going",
+            dismiss = stringResource(R.string.keep_going),
         )
     }
 }
@@ -260,16 +263,16 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (over) "Rest over" else formatClock((leftMs + 999) / 1000),
+                if (over) stringResource(R.string.rest_over) else formatClock((leftMs + 999) / 1000),
                 Modifier.weight(1f),
                 fontSize = if (over) 28.sp else 44.sp,
                 style = MaterialTheme.typography.displaySmall,
             )
             if (!over) {
-                FilledTonalButton(onClick = { vm.addRest(workout, ends) }, Modifier.height(56.dp)) { Text("+30s") }
+                FilledTonalButton(onClick = { vm.addRest(workout, ends) }, Modifier.height(56.dp)) { Text(stringResource(R.string.add_30s)) }
                 Spacer(Modifier.width(8.dp))
             }
-            Button(onClick = { vm.skipRest(workout) }, Modifier.height(56.dp)) { Text(if (over) "Dismiss" else "Skip") }
+            Button(onClick = { vm.skipRest(workout) }, Modifier.height(56.dp)) { Text(stringResource(if (over) R.string.dismiss else R.string.skip)) }
         }
     }
 }
@@ -297,28 +300,28 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1)
                 Text(
-                    if (done >= item.sets) "Done · $done logged" else "Set ${done + 1} of ${item.sets}",
+                    if (done >= item.sets) stringResource(R.string.done_logged, done) else stringResource(R.string.set_n_of, done + 1, item.sets),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
             if (last.isNotEmpty()) {
-                Text("Last time: " + last.joinToString(", ") { "${formatKg(it.weightKg)} × ${it.reps}" }, style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
             }
-            Stepper("kg", weight, KeyboardType.Decimal, { weight = it },
+            Stepper(stringResource(R.string.unit_kg), weight, KeyboardType.Decimal, { weight = it },
                 { weight = formatKg((w - 2.5).coerceAtLeast(0.0)) }, { weight = formatKg(w + 2.5) })
-            Stepper("reps", reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
+            Stepper(stringResource(R.string.unit_reps), reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
                 { reps = (r - 1).coerceAtLeast(1).toString() }, { reps = (r + 1).toString() })
             if (!resting) Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
-                Text(if (done >= item.sets) "Extra set" else "Set done", fontSize = 22.sp)
+                Text(stringResource(if (done >= item.sets) R.string.extra_set else R.string.set_done), fontSize = 22.sp)
             }
-            if (done > 0) TextButton(onClick = { confirmUndo = true }, Modifier.align(Alignment.CenterHorizontally)) { Text("Undo last set") }
+            if (done > 0) TextButton(onClick = { confirmUndo = true }, Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.undo_last_set)) }
         }
     }
     if (confirmUndo && prev != null) {
         ConfirmDialog(
-            title = "Undo last set?",
-            text = "Set ${prev.setNumber} (${formatKg(prev.weightKg)} kg × ${prev.reps}) will be deleted.",
-            confirm = "Undo",
+            title = stringResource(R.string.undo_set_title),
+            text = stringResource(R.string.undo_set_text, prev.setNumber, formatKg(prev.weightKg), prev.reps),
+            confirm = stringResource(R.string.undo_set_confirm),
             onConfirm = { confirmUndo = false; vm.undo(item) },
             onDismiss = { confirmUndo = false },
         )
@@ -328,7 +331,7 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
 @Composable
 private fun Stepper(unit: String, value: String, type: KeyboardType, onValue: (String) -> Unit, onMinus: () -> Unit, onPlus: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = onMinus, Modifier.size(56.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Default.Remove, "Minus $unit") }
+        FilledTonalButton(onClick = onMinus, Modifier.size(56.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Default.Remove, stringResource(R.string.minus_unit, unit)) }
         OutlinedTextField(
             value, onValue, Modifier.weight(1f),
             textStyle = MaterialTheme.typography.headlineSmall.copy(textAlign = TextAlign.Center),
@@ -336,6 +339,6 @@ private fun Stepper(unit: String, value: String, type: KeyboardType, onValue: (S
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = type),
         )
-        FilledTonalButton(onClick = onPlus, Modifier.size(56.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Default.Add, "Plus $unit") }
+        FilledTonalButton(onClick = onPlus, Modifier.size(56.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Default.Add, stringResource(R.string.plus_unit, unit)) }
     }
 }

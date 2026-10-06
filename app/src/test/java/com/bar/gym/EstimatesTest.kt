@@ -19,7 +19,7 @@ class EstimatesTest {
         assertEquals(2560, estimateSeconds(items(0)))
         assertEquals(2720, estimateSeconds(items(1)))
         assertEquals(2720, estimateSeconds(items(2)))
-        assertEquals("43 min", formatMinutes(2560))
+        assertEquals(43, roundMinutes(2560))
     }
 
     @Test fun remaining() {

@@ -1,6 +1,11 @@
 package com.bar.gym.ui
 
 import android.app.Application
+import android.app.LocaleManager
+import android.os.Build
+import android.os.LocaleList
+import androidx.compose.ui.res.stringResource
+import com.bar.gym.R
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,12 +34,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val INVALID = "That file is not a valid gym backup — nothing was changed."
+private val themes = listOf(ThemeMode.SYSTEM to R.string.system, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.DARK to R.string.theme_dark)
 
-private val themes = listOf(ThemeMode.SYSTEM to "System", ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark")
+// "he", not "iw": toLanguageTag() gives the modern code
+private val langTags = listOf("", "en", "he")
+private val langNames = listOf(R.string.system, R.string.lang_english, R.string.lang_hebrew)
+private fun langIndex(l: LocaleList) = when {
+    l.isEmpty -> 0
+    l[0].toLanguageTag().startsWith("he") -> 2
+    else -> 1
+}
 
 class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
     private val db = (app as GymApp).db
+    private fun counts(e: Int, s: Int, w: Int) = Triple(
+        app.resources.getQuantityString(R.plurals.exercise_count, e, e),
+        app.resources.getQuantityString(R.plurals.session_count, s, s),
+        app.resources.getQuantityString(R.plurals.workout_count, w, w),
+    )
+
     val message = MutableStateFlow("")
     val pending = MutableStateFlow<Backup?>(null)
 
@@ -45,8 +63,8 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
                 val out = app.contentResolver.openOutputStream(uri, "wt") ?: throw IOException("no stream")
                 out.use { it.write(json.toByteArray()) }
             }
-            "Backup saved"
-        } catch (e: Exception) { "Could not save the backup: ${e.message ?: e.javaClass.simpleName}" }
+            app.getString(R.string.backup_saved)
+        } catch (e: Exception) { app.getString(R.string.backup_save_failed, e.message ?: e.javaClass.simpleName) }
     }
 
     fun read(uri: Uri) = viewModelScope.launch {
@@ -56,9 +74,9 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
                 backupFromJson(text)
             }
             val problem = b.problem()
-            if (problem == null) pending.value = b else message.value = "$INVALID ($problem)"
+            if (problem == null) pending.value = b else message.value = app.getString(R.string.backup_invalid_reason, app.getString(R.string.backup_invalid), problem)
         } catch (e: Exception) { // SerializationException, IOException, IllegalArgumentException
-            message.value = INVALID
+            message.value = app.getString(R.string.backup_invalid)
         }
     }
 
@@ -69,11 +87,17 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
             val dao = db.dao()
             dao.getActiveWorkout()?.let { RestTimer.cancel(app, dao, it) }
             importBackup(db, b)
-            "Backup restored: ${b.exercises.size} exercises, ${b.sessions.size} sessions, ${b.workouts.size} workouts"
-        } catch (e: Exception) { "Restore failed, existing data was kept: ${e.message ?: e.javaClass.simpleName}" }
+            val (e, s, w) = counts(b.exercises.size, b.sessions.size, b.workouts.size)
+            app.getString(R.string.backup_restored, e, s, w)
+        } catch (e: Exception) { app.getString(R.string.restore_failed, e.message ?: e.javaClass.simpleName) }
     }
 
     fun dismiss() { pending.value = null }
+
+    fun restoreText(b: Backup): String {
+        val (e, s, w) = counts(b.exercises.size, b.sessions.size, b.workouts.size)
+        return app.getString(R.string.restore_text, e, s, w)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,37 +110,51 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
     val app = LocalContext.current.applicationContext as GymApp
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text("Settings") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            title = { Text(stringResource(R.string.settings)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         )
     }) { pad ->
         Column(Modifier.padding(pad).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Theme", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 themes.forEachIndexed { i, (mode, label) ->
                     SegmentedButton(
                         selected = app.themeMode == mode,
                         onClick = { app.themeMode = mode },
                         shape = SegmentedButtonDefaults.itemShape(i, themes.size),
-                    ) { Text(label) }
+                    ) { Text(stringResource(label)) }
                 }
             }
-            Text("Backup", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Text("Your data is stored only on this phone. Export a backup before uninstalling or changing phones.")
-            Button(onClick = { exportLauncher.launch("gym-backup-${LocalDate.now()}.json") }, Modifier.fillMaxWidth()) { Text("Export backup") }
+            if (Build.VERSION.SDK_INT >= 33) {
+                // Android stores the choice and recreates the activity itself
+                val lm = LocalContext.current.getSystemService(LocaleManager::class.java)
+                var lang by remember { mutableIntStateOf(langIndex(lm.applicationLocales)) }
+                Text(stringResource(R.string.language), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    langNames.forEachIndexed { i, name ->
+                        SegmentedButton(
+                            selected = lang == i,
+                            onClick = { lang = i; lm.applicationLocales = LocaleList.forLanguageTags(langTags[i]) },
+                            shape = SegmentedButtonDefaults.itemShape(i, langNames.size),
+                        ) { Text(stringResource(name)) }
+                    }
+                }
+            }
+            Text(stringResource(R.string.backup), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.backup_note))
+            Button(onClick = { exportLauncher.launch("gym-backup-${LocalDate.now()}.json") }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.export_backup)) }
             OutlinedButton(
                 onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
                 Modifier.fillMaxWidth(),
-            ) { Text("Import backup") }
+            ) { Text(stringResource(R.string.import_backup)) }
             if (message.isNotEmpty()) Text(message, style = MaterialTheme.typography.bodyLarge)
         }
     }
     pending?.let { b ->
         ConfirmDialog(
-            title = "Restore backup?",
-            text = "Replace ALL current data with this backup? It contains ${b.exercises.size} exercises, " +
-                "${b.sessions.size} sessions, ${b.workouts.size} workouts. This cannot be undone.",
-            confirm = "Replace",
+            title = stringResource(R.string.restore_title),
+            text = vm.restoreText(b),
+            confirm = stringResource(R.string.replace),
             onConfirm = vm::confirm,
             onDismiss = vm::dismiss,
         )

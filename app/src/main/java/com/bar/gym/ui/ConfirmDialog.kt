@@ -1,11 +1,13 @@
 package com.bar.gym.ui
 
+import com.bar.gym.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 
 /** Yes/no dialog. It never hides itself: the caller clears its own state inside [onConfirm] and [onDismiss]. */
 @Composable
-fun ConfirmDialog(title: String, text: String, confirm: String, onConfirm: () -> Unit, onDismiss: () -> Unit, dismiss: String = "Cancel") {
+fun ConfirmDialog(title: String, text: String, confirm: String, onConfirm: () -> Unit, onDismiss: () -> Unit, dismiss: String = stringResource(R.string.cancel)) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },

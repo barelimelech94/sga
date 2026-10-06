@@ -1,5 +1,7 @@
 package com.bar.gym.ui
 
+import com.bar.gym.R
+import androidx.compose.ui.res.stringResource
 import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
@@ -28,7 +30,7 @@ import com.bar.gym.data.Session
 import com.bar.gym.data.SessionExercise
 import com.bar.gym.domain.estimateSeconds
 import com.bar.gym.domain.formatKg
-import com.bar.gym.domain.formatMinutes
+import com.bar.gym.domain.roundMinutes
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -115,15 +117,15 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (id == -1L) "New session" else "Edit session") },
+                title = { Text(stringResource(if (id == -1L) R.string.new_session else R.string.edit_session)) },
                 navigationIcon = {
-                    IconButton(onClick = { if (vm.dirty) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = { if (vm.dirty) confirmLeave = true else onDone() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
                 actions = {
                     TextButton(
                         onClick = { if (id != -1L && vm.dirty) confirmSave = true else vm.save(id, onDone) },
                         enabled = vm.name.isNotBlank(),
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.save)) }
                 },
             )
         },
@@ -136,10 +138,10 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(key = "name") {
-                OutlinedTextField(vm.name, { vm.name = it }, Modifier.fillMaxWidth(), label = { Text("Session name") }, singleLine = true)
+                OutlinedTextField(vm.name, { vm.name = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.session_name)) }, singleLine = true)
             }
             item(key = "estimate") {
-                Text("Estimated duration: ${formatMinutes(vm.estimate())}", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.estimated_duration, stringResource(R.string.minutes_format, roundMinutes(vm.estimate()))), style = MaterialTheme.typography.titleMedium)
             }
             items(vm.rows, key = { it.key }) { r ->
                 ReorderableItem(reorder, key = r.key) { isDragging ->
@@ -153,23 +155,23 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                     ) {
                         Column(Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = {}, Modifier.size(48.dp).draggableHandle()) { Icon(Icons.Default.DragHandle, "Reorder") }
-                                Text(names[r.exerciseId] ?: "(removed exercise)", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, "Remove") }
+                                IconButton(onClick = {}, Modifier.size(48.dp).draggableHandle()) { Icon(Icons.Default.DragHandle, stringResource(R.string.reorder)) }
+                                Text(names[r.exerciseId] ?: stringResource(R.string.removed_exercise), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, stringResource(R.string.remove)) }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Field("kg", r.weight, KeyboardType.Decimal, Modifier.weight(1.2f)) { upd(r.copy(weight = it)) }
-                                Field("sets", r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
-                                Field("reps", r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
-                                Field("rest s", r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
-                                Field("work s", r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
+                                Field(stringResource(R.string.unit_kg), r.weight, KeyboardType.Decimal, Modifier.weight(1.2f)) { upd(r.copy(weight = it)) }
+                                Field(stringResource(R.string.field_sets), r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
+                                Field(stringResource(R.string.unit_reps), r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
+                                Field(stringResource(R.string.field_rest), r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
+                                Field(stringResource(R.string.field_work), r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
                             }
                         }
                     }
                 }
             }
             item(key = "add") {
-                Button(onClick = { showPicker = true }, Modifier.fillMaxWidth().height(52.dp)) { Text("Add exercise") }
+                Button(onClick = { showPicker = true }, Modifier.fillMaxWidth().height(52.dp)) { Text(stringResource(R.string.add_exercise)) }
             }
         }
     }
@@ -177,12 +179,12 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
     if (showPicker) {
         AlertDialog(
             onDismissRequest = { showPicker = false },
-            title = { Text("Add exercise") },
+            title = { Text(stringResource(R.string.add_exercise)) },
             text = {
                 LazyColumn {
                     bank.groupBy { it.bodyPart }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (part, exs) ->
                         item(key = "h$part") {
-                            Text(part.ifBlank { "Other" }, Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleSmall)
+                            Text(part.ifBlank { stringResource(R.string.other) }, Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleSmall)
                         }
                         items(exs.size, key = { exs[it].id }) { k ->
                             TextButton(onClick = { vm.add(exs[k]); showPicker = false }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -193,35 +195,35 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     removing?.let { r ->
         ConfirmDialog(
-            title = "Remove exercise?",
-            text = "Remove \"${names[r.exerciseId] ?: "(removed exercise)"}\" from this session?",
-            confirm = "Remove",
+            title = stringResource(R.string.remove_exercise_title),
+            text = stringResource(R.string.remove_exercise_text, names[r.exerciseId] ?: stringResource(R.string.removed_exercise)),
+            confirm = stringResource(R.string.remove),
             onConfirm = { vm.rows.removeAll { it.key == r.key }; selected = selected - r.key; removing = null },
             onDismiss = { removing = null },
         )
     }
     if (confirmSave) {
         ConfirmDialog(
-            title = "Save changes?",
-            text = "\"${vm.name.trim()}\" will be updated.",
-            confirm = "Save",
+            title = stringResource(R.string.save_changes_title),
+            text = stringResource(R.string.update_named, vm.name.trim()),
+            confirm = stringResource(R.string.save),
             onConfirm = { confirmSave = false; vm.save(id, onDone) },
             onDismiss = { confirmSave = false },
         )
     }
     if (confirmLeave) {
         ConfirmDialog(
-            title = "Discard changes?",
-            text = "You have unsaved changes.",
-            confirm = "Discard",
+            title = stringResource(R.string.discard_changes_title),
+            text = stringResource(R.string.unsaved_changes),
+            confirm = stringResource(R.string.discard),
             onConfirm = { confirmLeave = false; onDone() },
             onDismiss = { confirmLeave = false },
-            dismiss = "Keep editing",
+            dismiss = stringResource(R.string.keep_editing),
         )
     }
 }

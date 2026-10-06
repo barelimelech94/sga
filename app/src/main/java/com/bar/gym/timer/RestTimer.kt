@@ -1,5 +1,6 @@
 package com.bar.gym.timer
 
+import com.bar.gym.R
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -38,13 +39,13 @@ object RestTimer {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         nm.deleteNotificationChannel("rest_over") // old id: its notification-usage sound can't be changed in place
         nm.createNotificationChannel(
-            NotificationChannel(ONGOING_CHANNEL, "Rest timer", NotificationManager.IMPORTANCE_LOW).apply {
+            NotificationChannel(ONGOING_CHANNEL, context.getString(R.string.channel_rest_timer), NotificationManager.IMPORTANCE_LOW).apply {
                 setSound(null, null)
                 enableVibration(false)
             }
         )
         nm.createNotificationChannel(
-            NotificationChannel(OVER_CHANNEL, "Rest over", NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(OVER_CHANNEL, context.getString(R.string.channel_rest_over), NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 400, 200, 400)
                 setSound(overSound, overAttrs)
@@ -78,7 +79,7 @@ object RestTimer {
         nm?.cancel(OVER_ID) // stale "rest over" from a previous rest
         val n = Notification.Builder(context, ONGOING_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Resting")
+            .setContentTitle(context.getString(R.string.notif_resting))
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
             .setWhen(endsAt)

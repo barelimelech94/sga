@@ -1,5 +1,8 @@
 package com.bar.gym.ui
 
+import com.bar.gym.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,7 +27,7 @@ import com.bar.gym.data.Session
 import com.bar.gym.data.Workout
 import com.bar.gym.timer.RestTimer
 import com.bar.gym.domain.estimateSeconds
-import com.bar.gym.domain.formatMinutes
+import com.bar.gym.domain.roundMinutes
 import kotlinx.coroutines.launch
 
 class SessionsViewModel(app: Application) : AndroidViewModel(app) {
@@ -76,15 +79,15 @@ fun SessionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sessions") },
+                title = { Text(stringResource(R.string.sessions_title)) },
                 actions = {
-                    IconButton(onClick = onExercises) { Icon(Icons.Default.FitnessCenter, "Exercise bank") }
-                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
+                    IconButton(onClick = onExercises) { Icon(Icons.Default.FitnessCenter, stringResource(R.string.exercise_bank)) }
+                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, stringResource(R.string.settings)) }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onEdit(-1) }) { Icon(Icons.Default.Add, "Add session") }
+            FloatingActionButton(onClick = { onEdit(-1) }) { Icon(Icons.Default.Add, stringResource(R.string.add_session)) }
         },
     ) { pad ->
         LazyColumn(
@@ -96,8 +99,8 @@ fun SessionsScreen(
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                         Row(Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Workout in progress: ${w.sessionName}", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                            Button(onClick = onResume) { Text("Resume") }
+                            Text(stringResource(R.string.workout_in_progress_named, w.sessionName), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Button(onClick = onResume) { Text(stringResource(R.string.resume)) }
                         }
                     }
                 }
@@ -107,12 +110,17 @@ fun SessionsScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
                         Text(s.name, style = MaterialTheme.typography.titleLarge)
-                        Text("${list.size} exercises · ${formatMinutes(estimateSeconds(list))}", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            stringResource(
+                                R.string.session_summary,
+                                pluralStringResource(R.plurals.exercise_count, list.size, list.size),
+                                stringResource(R.string.minutes_format, roundMinutes(estimateSeconds(list))),
+                            ), style = MaterialTheme.typography.bodyLarge)
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text("Start") }
+                            Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text(stringResource(R.string.start)) }
                             Spacer(Modifier.weight(1f))
-                            IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, "Edit") }
-                            IconButton(onClick = { toDelete = s }, Modifier.size(48.dp)) { Icon(Icons.Default.Delete, "Delete") }
+                            IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, stringResource(R.string.edit)) }
+                            IconButton(onClick = { toDelete = s }, Modifier.size(48.dp)) { Icon(Icons.Default.Delete, stringResource(R.string.delete)) }
                         }
                     }
                 }
@@ -121,18 +129,18 @@ fun SessionsScreen(
     }
     conflict?.let { (old, s) ->
         ConfirmDialog(
-            title = "Workout in progress",
-            text = "Finish the workout in progress (${old.sessionName}) and start this one?",
-            confirm = "Finish and start",
+            title = stringResource(R.string.workout_in_progress),
+            text = stringResource(R.string.finish_and_start_text, old.sessionName),
+            confirm = stringResource(R.string.finish_and_start),
             onConfirm = { vm.finishAndStart(old, s, onStart); conflict = null },
             onDismiss = { conflict = null },
         )
     }
     toDelete?.let { s ->
         ConfirmDialog(
-            title = "Delete session?",
-            text = "Delete \"${s.name}\"? Past workouts are kept.",
-            confirm = "Delete",
+            title = stringResource(R.string.delete_session_title),
+            text = stringResource(R.string.delete_session_text, s.name),
+            confirm = stringResource(R.string.delete),
             onConfirm = { vm.delete(s.id); toDelete = null },
             onDismiss = { toDelete = null },
         )

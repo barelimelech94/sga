@@ -1,5 +1,7 @@
 package com.bar.gym.ui
 
+import com.bar.gym.R
+import androidx.compose.ui.res.stringResource
 import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,7 +26,8 @@ class ExercisesViewModel(app: Application) : AndroidViewModel(app) {
     val exercises = (app as GymApp).db.dao().observeExercises()
 }
 
-fun Exercise.defaultsText() = "${formatKg(weightKg)} kg · $sets × $reps · rest ${restSec}s"
+@Composable
+fun Exercise.defaultsText() = stringResource(R.string.defaults_text, formatKg(weightKg), sets, reps, restSec)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,19 +41,19 @@ fun ExercisesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Exercise bank") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text(stringResource(R.string.exercise_bank)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onEdit(-1) }) { Icon(Icons.Default.Add, "Add exercise") }
+            FloatingActionButton(onClick = { onEdit(-1) }) { Icon(Icons.Default.Add, stringResource(R.string.add_exercise)) }
         },
     ) { pad ->
         LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(bottom = 88.dp)) {
             list.groupBy { it.bodyPart }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (part, exs) ->
                 item(key = "h$part") {
                     Text(
-                        part.ifBlank { "Other" },
+                        part.ifBlank { stringResource(R.string.other) },
                         Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
@@ -63,7 +66,7 @@ fun ExercisesScreen(
                         supportingContent = { Text(e.defaultsText(), style = MaterialTheme.typography.bodyLarge) },
                         trailingContent = {
                             IconButton(onClick = { onHistory(e.id) }, Modifier.size(48.dp)) {
-                                Icon(Icons.Default.ShowChart, "History")
+                                Icon(Icons.Default.ShowChart, stringResource(R.string.history))
                             }
                         },
                         modifier = Modifier.clickable { onEdit(e.id) }.heightIn(min = 64.dp),

@@ -39,6 +39,7 @@ suspend fun importBackup(db: GymDb, backup: Backup) {
     }
 }
 
+// ponytail: reasons stay English (rare diagnostic); move to resources if they need translating
 /** Null when the backup is safe to import, else a short reason. */
 fun Backup.problem(): String? {
     if (version != 1) return "unsupported version $version"
