@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
 import com.bar.gym.MainActivity
@@ -29,6 +30,8 @@ object RestTimer {
         .setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
+    // Kept referenced so Ringtone's finalizer can't release its player mid-sound
+    private var ringtone: Ringtone? = null
 
     /** Idempotent. Channel settings are immutable after first creation. */
     fun ensureChannels(context: Context) {
@@ -52,7 +55,8 @@ object RestTimer {
     /** Plays the "Rest over" sound once, for when the notification that normally plays it can't be shown. */
     fun playOverSound(context: Context) {
         try {
-            RingtoneManager.getRingtone(context, overSound)?.apply { audioAttributes = overAttrs; play() }
+            // applicationContext: the Ringtone is held in a field and retains its Context, which must not be an Activity
+            ringtone = RingtoneManager.getRingtone(context.applicationContext, overSound)?.apply { audioAttributes = overAttrs; play() }
         } catch (_: Exception) { }
     }
 
