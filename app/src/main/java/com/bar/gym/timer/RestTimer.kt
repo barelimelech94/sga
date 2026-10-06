@@ -19,13 +19,21 @@ object RestTimer {
     const val ONGOING_ID = 1
     const val OVER_ID = 2
     const val ONGOING_CHANNEL = "rest_timer"
-    const val OVER_CHANNEL = "rest_over"
+    const val OVER_CHANNEL = "rest_over_alarm"
     private const val ALARM_REQUEST = 1
     private const val OPEN_REQUEST = 2
+
+    private val overSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    // USAGE_ALARM plays at alarm volume, so it is audible with the ringer on vibrate or silent
+    private val overAttrs = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_ALARM)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
 
     /** Idempotent. Channel settings are immutable after first creation. */
     fun ensureChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        nm.deleteNotificationChannel("rest_over") // old id: its notification-usage sound can't be changed in place
         nm.createNotificationChannel(
             NotificationChannel(ONGOING_CHANNEL, "Rest timer", NotificationManager.IMPORTANCE_LOW).apply {
                 setSound(null, null)
@@ -36,15 +44,16 @@ object RestTimer {
             NotificationChannel(OVER_CHANNEL, "Rest over", NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 400, 200, 400)
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
+                setSound(overSound, overAttrs)
             }
         )
+    }
+
+    /** Plays the "Rest over" sound once, for when the notification that normally plays it can't be shown. */
+    fun playOverSound(context: Context) {
+        try {
+            RingtoneManager.getRingtone(context, overSound)?.apply { audioAttributes = overAttrs; play() }
+        } catch (_: Exception) { }
     }
 
     fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(

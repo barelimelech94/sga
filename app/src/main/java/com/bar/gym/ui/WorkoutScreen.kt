@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
@@ -93,6 +94,13 @@ class WorkoutViewModel(app: Application) : AndroidViewModel(app) {
         RestTimer.cancel(getApplication(), dao, w)
         dao.getWorkout(w.id)?.let { dao.updateWorkout(it.copy(finishedAt = System.currentTimeMillis(), restEndsAt = null)) }
     }
+
+    /** Deletes the workout and, by cascade, its logs. The screen leaves on its own once there is no active workout. */
+    fun abort() = viewModelScope.launch {
+        val w = dao.getActiveWorkout() ?: return@launch
+        RestTimer.cancel(getApplication(), dao, w)
+        dao.deleteWorkout(w.id)
+    }
 }
 
 @Composable
@@ -134,6 +142,7 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
         return
     }
     var confirmFinish by remember { mutableStateOf(false) }
+    var confirmAbort by remember { mutableStateOf(false) }
     val sorted = items.sortedBy { it.position }
     val next = nextUp(items, logs)
     val selected = sorted.firstOrNull { it.id == explicit } ?: defaultSelection(items, logs) ?: sorted.firstOrNull()
@@ -145,12 +154,15 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
             TopAppBar(
                 title = {
                     Column {
-                        Text(workout.sessionName, maxLines = 1)
+                        Text(workout.sessionName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val now by rememberNow()
                         Text(formatClock((now - workout.startedAt) / 1000), style = MaterialTheme.typography.bodyMedium)
                     }
                 },
-                actions = { TextButton(onClick = { confirmFinish = true }) { Text("Finish", fontSize = 18.sp) } },
+                actions = {
+                    TextButton(onClick = { confirmAbort = true }) { Text("Abort", color = MaterialTheme.colorScheme.error, fontSize = 18.sp) }
+                    TextButton(onClick = { confirmFinish = true }) { Text("Finish", fontSize = 18.sp) }
+                },
             )
         },
     ) { pad ->
@@ -197,12 +209,24 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
     }
 
     if (confirmFinish) {
-        AlertDialog(
-            onDismissRequest = { confirmFinish = false },
-            title = { Text("Finish workout?") },
-            text = { Text(if (done < total) "${total - done} planned sets are not done yet." else "All planned sets are done.") },
-            confirmButton = { TextButton(onClick = { confirmFinish = false; vm.finish() }) { Text("Finish") } },
-            dismissButton = { TextButton(onClick = { confirmFinish = false }) { Text("Keep going") } },
+        ConfirmDialog(
+            title = "Finish workout?",
+            text = if (done < total) "${total - done} planned sets are not done yet." else "All planned sets are done.",
+            confirm = "Finish",
+            onConfirm = { confirmFinish = false; vm.finish() },
+            onDismiss = { confirmFinish = false },
+            dismiss = "Keep going",
+        )
+    }
+    if (confirmAbort) {
+        ConfirmDialog(
+            title = "Abort workout?",
+            text = if (logs.isEmpty()) "Nothing has been logged yet."
+            else "The workout and its ${logs.size} logged sets will be deleted. This cannot be undone.",
+            confirm = "Abort",
+            onConfirm = { confirmAbort = false; vm.abort() },
+            onDismiss = { confirmAbort = false },
+            dismiss = "Keep going",
         )
     }
 }
@@ -217,11 +241,12 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
         val left = ends - System.currentTimeMillis()
         if (left > 0) {
             delay(left)
-            // the "Rest over" notification channel vibrates; only buzz here if it can't be shown
+            // the "Rest over" notification channel vibrates and rings; only do it here if it can't be shown
             if (context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() == true) return@LaunchedEffect
             @Suppress("DEPRECATION")
             context.getSystemService(Vibrator::class.java)
                 ?.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
+            RestTimer.playOverSound(context)
         }
     }
     val leftMs = ends - now
@@ -257,6 +282,9 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
     var weight by remember(item.id, done) { mutableStateOf(formatKg(prev?.weightKg ?: item.weightKg)) }
     var reps by remember(item.id, done) { mutableStateOf((prev?.reps ?: item.reps).toString()) }
     var last by remember(item.exerciseId) { mutableStateOf(emptyList<SetLog>()) }
+    var confirmUndo by remember(item.id) { mutableStateOf(false) }
+    val now = rememberNow()
+    val resting by remember(workout.restEndsAt) { derivedStateOf { (workout.restEndsAt ?: 0L) > now.value } }
     LaunchedEffect(item.exerciseId, workout.id) { last = vm.dao.lastTimeLogs(item.exerciseId, workout.id) }
     val w = weight.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
     val r = reps.toIntOrNull()?.coerceAtLeast(1) ?: 1
@@ -280,11 +308,20 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                 { weight = formatKg((w - 2.5).coerceAtLeast(0.0)) }, { weight = formatKg(w + 2.5) })
             Stepper("reps", reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
                 { reps = (r - 1).coerceAtLeast(1).toString() }, { reps = (r + 1).toString() })
-            Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
+            if (!resting) Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
                 Text(if (done >= item.sets) "Extra set" else "Set done", fontSize = 22.sp)
             }
-            if (done > 0) TextButton(onClick = { vm.undo(item) }, Modifier.align(Alignment.CenterHorizontally)) { Text("Undo last set") }
+            if (done > 0) TextButton(onClick = { confirmUndo = true }, Modifier.align(Alignment.CenterHorizontally)) { Text("Undo last set") }
         }
+    }
+    if (confirmUndo && prev != null) {
+        ConfirmDialog(
+            title = "Undo last set?",
+            text = "Set ${prev.setNumber} (${formatKg(prev.weightKg)} kg × ${prev.reps}) will be deleted.",
+            confirm = "Undo",
+            onConfirm = { confirmUndo = false; vm.undo(item) },
+            onDismiss = { confirmUndo = false },
+        )
     }
 }
 

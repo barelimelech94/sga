@@ -57,6 +57,8 @@ interface GymDao {
     @Update suspend fun updateWorkout(workout: Workout)
     @Query("SELECT * FROM Workout WHERE id = :id")
     suspend fun getWorkout(id: Long): Workout?
+    @Query("DELETE FROM Workout WHERE id = :id")
+    suspend fun deleteWorkout(id: Long)
 
     // SetLogs
     @Query("SELECT * FROM SetLog WHERE workoutId = :workoutId ORDER BY completedAt")
