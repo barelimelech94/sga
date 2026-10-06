@@ -53,8 +53,10 @@ class SessionEditViewModel(app: Application) : AndroidViewModel(app) {
     var name by mutableStateOf("")
     val rows = mutableStateListOf<Row>()
     private var nextKey = 1L
-    private var savedName = ""
-    private var savedRows = emptyList<Row>()
+    private var savedName by mutableStateOf("")
+    private var savedRows by mutableStateOf(emptyList<Row>())
+
+    /** Read in composition (BackHandler), so every input must be snapshot state; `load` sets savedName together with name. */
     val dirty get() = name != savedName || rows.toList() != savedRows
 
     private fun SessionExercise.toRow() = Row(nextKey++, exerciseId, formatKg(weightKg), "$sets", "$reps", "$restSec", "$workSec")
@@ -64,10 +66,10 @@ class SessionEditViewModel(app: Application) : AndroidViewModel(app) {
         loadedId = id
         if (id == -1L) return
         name = dao.getSession(id)?.name ?: ""
+        savedName = name
         rows.clear()
         // ponytail: one-shot read of current items; flow isn't needed while editing
         rows.addAll(dao.getSessionExercises(id).map { it.toRow() })
-        savedName = name
         savedRows = rows.toList()
     }
 
