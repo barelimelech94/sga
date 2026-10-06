@@ -17,3 +17,5 @@ fun nextUp(items: List<SessionExercise>, logs: List<SetLog>): SessionExercise? =
     items.sortedBy { it.position }.firstOrNull { doneSets(it, logs) < it.sets }
 
 fun formatMinutes(seconds: Int): String = "${(seconds / 60.0).roundToInt()} min"
+
+fun formatKg(kg: Double): String = if (kg == Math.floor(kg) && !kg.isInfinite()) kg.toLong().toString() else kg.toString()

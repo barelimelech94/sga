@@ -22,6 +22,9 @@ interface GymDao {
     @Query("SELECT COUNT(*) FROM SetLog WHERE exerciseId = :exerciseId")
     suspend fun countLogsForExercise(exerciseId: Long): Int
 
+    @Query("DELETE FROM SessionExercise WHERE exerciseId = :exerciseId")
+    suspend fun deleteSessionExercisesForExercise(exerciseId: Long)
+
     // Sessions
     @Query("SELECT * FROM Session ORDER BY id")
     fun observeSessions(): Flow<List<Session>>
@@ -34,6 +37,8 @@ interface GymDao {
     // SessionExercises
     @Query("SELECT * FROM SessionExercise WHERE sessionId = :sessionId ORDER BY position")
     fun observeSessionExercises(sessionId: Long): Flow<List<SessionExercise>>
+    @Query("SELECT * FROM SessionExercise WHERE sessionId = :sessionId ORDER BY position")
+    suspend fun getSessionExercises(sessionId: Long): List<SessionExercise>
     @Query("SELECT * FROM SessionExercise ORDER BY sessionId, position")
     fun observeAllSessionExercises(): Flow<List<SessionExercise>>
     @Upsert suspend fun upsertSessionExercise(item: SessionExercise): Long

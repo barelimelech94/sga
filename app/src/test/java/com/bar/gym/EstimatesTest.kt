@@ -37,4 +37,10 @@ class EstimatesTest {
         assertEquals(a[1], nextUp(a, first))
         assertNull(nextUp(a, a.flatMap { i -> (1..i.sets).map { log(i, it) } }))
     }
+
+    @Test fun kg() {
+        assertEquals("70", formatKg(70.0))
+        assertEquals("12.5", formatKg(12.5))
+        assertEquals("0", formatKg(0.0))
+    }
 }
