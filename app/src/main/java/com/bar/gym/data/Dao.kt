@@ -64,6 +64,8 @@ interface GymDao {
     @Insert suspend fun insertLog(log: SetLog): Long
     @Query("DELETE FROM SetLog WHERE id = :id")
     suspend fun deleteLog(id: Long)
+    @Query("SELECT * FROM Workout")
+    fun observeWorkouts(): Flow<List<Workout>>
     @Query("SELECT * FROM SetLog WHERE exerciseId = :exerciseId ORDER BY completedAt")
     fun observeLogsForExercise(exerciseId: Long): Flow<List<SetLog>>
     @Query(

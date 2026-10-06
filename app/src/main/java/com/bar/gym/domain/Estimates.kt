@@ -34,3 +34,11 @@ fun defaultSelection(items: List<SessionExercise>, logs: List<SetLog>): SessionE
     val lastItem = last?.let { l -> items.firstOrNull { it.exerciseId == l.exerciseId } }
     return if (lastItem != null && doneSets(lastItem, logs) < lastItem.sets) lastItem else nextUp(items, logs)
 }
+
+data class HistoryPoint(val workoutId: Long, val date: Long, val topWeightKg: Double, val sets: List<SetLog>)
+
+/** One point per workout with logs, oldest first. Logs whose workout has no date are skipped. */
+fun historyPoints(logs: List<SetLog>, workoutDates: Map<Long, Long>): List<HistoryPoint> =
+    logs.filter { it.workoutId in workoutDates }.groupBy { it.workoutId }.map { (id, ls) ->
+        HistoryPoint(id, workoutDates.getValue(id), ls.maxOf { it.weightKg }, ls.sortedBy { it.setNumber })
+    }.sortedBy { it.date }

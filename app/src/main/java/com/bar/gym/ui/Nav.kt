@@ -1,6 +1,5 @@
 package com.bar.gym.ui
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
@@ -49,7 +48,9 @@ fun GymNav() {
             ExerciseEditScreen(e.arguments!!.getLong("id"), onDone = { nav.popBackStack() })
         }
         composable("workout") { WorkoutScreen(onGone = { nav.popBackStack("sessions", false) }) }
-        composable("history/{exerciseId}", listOf(navArgument("exerciseId") { type = NavType.LongType })) { Text("History") }
-        composable("settings") { Text("Settings") }
+        composable("history/{exerciseId}", listOf(navArgument("exerciseId") { type = NavType.LongType })) { e ->
+            HistoryScreen(e.arguments!!.getLong("exerciseId"), onBack = { nav.popBackStack() })
+        }
+        composable("settings") { SettingsScreen(onBack = { nav.popBackStack() }) }
     }
 }

@@ -38,3 +38,13 @@ suspend fun importBackup(db: GymDb, backup: Backup) {
         dao.insertWorkouts(backup.workouts); dao.insertSetLogs(backup.setLogs)
     }
 }
+
+/** Null when the backup is safe to import, else a short reason. */
+fun Backup.problem(): String? {
+    if (version != 1) return "unsupported version $version"
+    val sessionIds = sessions.map { it.id }.toSet()
+    val workoutIds = workouts.map { it.id }.toSet()
+    if (sessionExercises.any { it.sessionId !in sessionIds }) return "an exercise entry points at a missing session"
+    if (setLogs.any { it.workoutId !in workoutIds }) return "a logged set points at a missing workout"
+    return null
+}
