@@ -101,7 +101,7 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
                     ) { Text(label) }
                 }
             }
-            Text("Backup", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text("Backup", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Text("Your data is stored only on this phone. Export a backup before uninstalling or changing phones.")
             Button(onClick = { exportLauncher.launch("gym-backup-${LocalDate.now()}.json") }, Modifier.fillMaxWidth()) { Text("Export backup") }
             OutlinedButton(

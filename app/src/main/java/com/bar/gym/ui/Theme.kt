@@ -7,9 +7,11 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import com.bar.gym.GymApp
 import com.bar.gym.R
@@ -22,13 +24,10 @@ fun isDarkTheme(): Boolean = when ((LocalContext.current.applicationContext as G
     ThemeMode.DARK -> true
 }
 
-// One variable font file; Compose applies the weight axis from each FontWeight.
-private val Rubik = FontFamily(
-    Font(R.font.rubik, FontWeight.Normal),
-    Font(R.font.rubik, FontWeight.Medium),
-    Font(R.font.rubik, FontWeight.SemiBold),
-    Font(R.font.rubik, FontWeight.Bold),
-)
+// Explicit variation settings: without them the variable font is drawn at its default weight (300).
+@OptIn(ExperimentalTextApi::class)
+private fun rubikFont(w: FontWeight) = Font(R.font.rubik, w, variationSettings = FontVariation.Settings(FontVariation.weight(w.weight)))
+private val Rubik = FontFamily(rubikFont(FontWeight.Normal), rubikFont(FontWeight.Medium), rubikFont(FontWeight.SemiBold), rubikFont(FontWeight.Bold))
 
 // "tnum": fixed-width digits, so the countdown does not jitter
 private fun TextStyle.rubik(w: FontWeight) = copy(fontFamily = Rubik, fontWeight = w, fontFeatureSettings = "tnum")

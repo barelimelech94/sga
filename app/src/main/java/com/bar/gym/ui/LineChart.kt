@@ -26,7 +26,7 @@ fun LineChart(values: List<Double>, labels: List<String>, modifier: Modifier) {
     val face = remember { res.getFont(R.font.rubik) }
     Canvas(modifier) {
         if (values.isEmpty()) return@Canvas
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = text; textSize = 12.dp.toPx(); typeface = face }
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = text; textSize = 12.dp.toPx(); typeface = face; fontVariationSettings = "'wght' 400" }
         val left = 44.dp.toPx(); val right = 12.dp.toPx(); val top = 12.dp.toPx(); val bottom = 28.dp.toPx()
         val w = size.width - left - right; val h = size.height - top - bottom
         val lo = values.min(); val hi = values.max()
