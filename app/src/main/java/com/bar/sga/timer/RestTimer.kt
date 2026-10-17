@@ -10,6 +10,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import com.bar.sga.MainActivity
 import com.bar.sga.R
@@ -21,11 +22,12 @@ object RestTimer {
     const val ONGOING_ID = 1
     const val OVER_ID = 2
     const val ONGOING_CHANNEL = "rest_timer"
-    const val OVER_CHANNEL = "rest_over_alarm"
+    const val OVER_CHANNEL = "rest_over_chime"
     private const val ALARM_REQUEST = 1
     private const val OPEN_REQUEST = 2
 
-    private val overSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    /** Bundled chime (res/raw/rest_over.wav), so it doesn't depend on the phone's default notification sound. */
+    private fun overSound(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.rest_over}")
     // USAGE_ALARM plays at alarm volume, so it is audible with the ringer on vibrate or silent
     private val overAttrs = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
@@ -37,7 +39,9 @@ object RestTimer {
     /** Idempotent. Channel settings are immutable after first creation. */
     fun ensureChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
-        nm.deleteNotificationChannel("rest_over") // old id: its notification-usage sound can't be changed in place
+        // old ids: a channel's sound can't be changed in place
+        nm.deleteNotificationChannel("rest_over")
+        nm.deleteNotificationChannel("rest_over_alarm")
         nm.createNotificationChannel(
             NotificationChannel(ONGOING_CHANNEL, context.getString(R.string.channel_rest_timer), NotificationManager.IMPORTANCE_LOW).apply {
                 setSound(null, null)
@@ -48,7 +52,7 @@ object RestTimer {
             NotificationChannel(OVER_CHANNEL, context.getString(R.string.channel_rest_over), NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 400, 200, 400)
-                setSound(overSound, overAttrs)
+                setSound(overSound(context), overAttrs)
             }
         )
     }
@@ -57,7 +61,7 @@ object RestTimer {
     fun playOverSound(context: Context) {
         try {
             // applicationContext: the Ringtone is held in a field and retains its Context, which must not be an Activity
-            ringtone = RingtoneManager.getRingtone(context.applicationContext, overSound)?.apply { audioAttributes = overAttrs; play() }
+            ringtone = RingtoneManager.getRingtone(context.applicationContext, overSound(context))?.apply { audioAttributes = overAttrs; play() }
         } catch (_: Exception) { }
     }
 
