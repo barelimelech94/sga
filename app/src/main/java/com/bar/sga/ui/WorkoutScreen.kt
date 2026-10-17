@@ -212,13 +212,15 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     val d = doneSets(it, logs)
                     val complete = d >= it.sets
                     val isNext = it.id == next?.id
+                    // The border marks the exercise in the panel; with none open, it points at what's next.
+                    val outlined = it.id == (selected ?: next)?.id
                     Card(
                         Modifier.fillMaxWidth().alpha(if (complete) 0.55f else 1f).clickable { vm.selectedId.value = it.id },
                         colors = CardDefaults.cardColors(
                             containerColor = if (it.id == selected?.id) MaterialTheme.colorScheme.secondaryContainer
                             else MaterialTheme.colorScheme.surfaceVariant,
                         ),
-                        border = if (isNext) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
+                        border = if (outlined) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
                     ) {
                         Row(Modifier.padding(12.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
