@@ -39,8 +39,9 @@ jobs:
           mkdir -p ~/.android
           echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
 
+      # gradle.properties pins a macOS Java path; point CI at its own JDK instead.
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleDebug -Dorg.gradle.java.home="$JAVA_HOME"
 
       - name: Publish pre-release
         env:
