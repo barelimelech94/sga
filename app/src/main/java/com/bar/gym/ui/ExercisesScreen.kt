@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
 import com.bar.gym.R
 import com.bar.gym.data.Exercise
+import com.bar.gym.data.bodyGroup
 import com.bar.gym.domain.formatKg
 
 class ExercisesViewModel(app: Application) : AndroidViewModel(app) {
@@ -50,14 +51,13 @@ fun ExercisesScreen(
         },
     ) { pad ->
         LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(bottom = 88.dp)) {
-            list.groupBy { it.bodyPart }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (part, exs) ->
-                item(key = "h$part") {
-                    Text(
-                        part.ifBlank { stringResource(R.string.other) },
-                        Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+            list.groupBy { it.bodyGroup }.toSortedMap().forEach { (group, exs) ->
+                item(key = "h$group") {
+                    Row(Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        BodyGroupIcon(group, tint = MaterialTheme.colorScheme.primary, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(group.labelRes), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    }
                 }
                 items(exs.size, key = { exs[it].id }) { i ->
                     val e = exs[i]

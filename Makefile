@@ -4,7 +4,7 @@ SDK ?= /opt/homebrew/share/android-commandlinetools
 AVD ?= gym
 ADB := $(SDK)/platform-tools/adb
 
-.PHONY: help build test device install run emulator emulator-fresh clean
+.PHONY: help build test device install run emulator emulator-fresh icons clean
 
 help:  ## List targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -33,6 +33,9 @@ emulator-fresh:  ## Like emulator, but headless and discards all changes on exit
 	$(SDK)/emulator/emulator -avd $(AVD) -read-only -no-window -no-audio -no-boot-anim -no-snapshot >/dev/null 2>&1 &
 	$(ADB) wait-for-device
 	@until [ "$$($(ADB) shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 2; done
+
+icons:  ## Regenerate the body-group icons from tools/body_polygons.json
+	python3 tools/gen_body_icons.py
 
 clean:  ## Delete build output
 	./gradlew clean

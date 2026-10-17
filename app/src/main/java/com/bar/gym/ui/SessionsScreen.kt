@@ -1,6 +1,7 @@
 package com.bar.gym.ui
 
 import android.app.Application
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -24,16 +26,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
 import com.bar.gym.R
 import com.bar.gym.data.Session
+import com.bar.gym.data.bodyGroup
 import com.bar.gym.data.Workout
 import com.bar.gym.timer.RestTimer
 import com.bar.gym.domain.estimateSeconds
 import com.bar.gym.domain.roundMinutes
+import com.bar.gym.domain.sessionBodyGroups
 import kotlinx.coroutines.launch
 
 class SessionsViewModel(app: Application) : AndroidViewModel(app) {
     val dao = (app as GymApp).db.dao()
     val sessions = dao.observeSessions()
     val items = dao.observeAllSessionExercises()
+    val exercises = dao.observeExercises()
     val active = dao.observeActiveWorkout()
     fun delete(id: Long) = viewModelScope.launch { dao.deleteSession(id) }
 
@@ -71,10 +76,13 @@ fun SessionsScreen(
 ) {
     val sessions by vm.sessions.collectAsStateWithLifecycle(emptyList())
     val all by vm.items.collectAsStateWithLifecycle(emptyList())
+    val exercises by vm.exercises.collectAsStateWithLifecycle(emptyList())
     val active by vm.active.collectAsStateWithLifecycle(null)
     var toDelete by remember { mutableStateOf<Session?>(null) }
     var conflict by remember { mutableStateOf<Pair<Workout, Session>?>(null) }
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val bySession = all.groupBy { it.sessionId }
+    val groupOf = exercises.associate { it.id to it.bodyGroup }
 
     Scaffold(
         topBar = {
@@ -107,7 +115,12 @@ fun SessionsScreen(
             }
             items(sessions, key = { it.id }) { s ->
                 val list = bySession[s.id].orEmpty()
-                Card(Modifier.fillMaxWidth()) {
+                val selected = s.id == selectedId
+                Card(
+                    Modifier.fillMaxWidth().clickable { selectedId = if (selected) null else s.id },
+                    colors = if (selected) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    else CardDefaults.cardColors(),
+                ) {
                     Column(Modifier.padding(16.dp)) {
                         Text(s.name, style = MaterialTheme.typography.titleLarge)
                         Text(
@@ -116,11 +129,15 @@ fun SessionsScreen(
                                 pluralStringResource(R.plurals.exercise_count, list.size, list.size),
                                 stringResource(R.string.minutes_format, roundMinutes(estimateSeconds(list))),
                             ), style = MaterialTheme.typography.bodyLarge)
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text(stringResource(R.string.start)) }
-                            Spacer(Modifier.weight(1f))
-                            IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, stringResource(R.string.edit)) }
-                            IconButton(onClick = { toDelete = s }, Modifier.size(48.dp)) { Icon(Icons.Default.Delete, stringResource(R.string.delete)) }
+                        val groupIcons = sessionBodyGroups(list, groupOf)
+                        if (groupIcons.isNotEmpty()) BodyGroupIcons(groupIcons, 28.dp, Modifier.padding(top = 8.dp, bottom = if (selected) 8.dp else 0.dp))
+                        if (selected) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text(stringResource(R.string.start)) }
+                                Spacer(Modifier.weight(1f))
+                                IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, stringResource(R.string.edit)) }
+                                IconButton(onClick = { toDelete = s }, Modifier.size(48.dp)) { Icon(Icons.Default.Delete, stringResource(R.string.delete)) }
+                            }
                         }
                     }
                 }
@@ -141,7 +158,7 @@ fun SessionsScreen(
             title = stringResource(R.string.delete_session_title),
             text = stringResource(R.string.delete_session_text, s.name),
             confirm = stringResource(R.string.delete),
-            onConfirm = { vm.delete(s.id); toDelete = null },
+            onConfirm = { vm.delete(s.id); if (selectedId == s.id) selectedId = null; toDelete = null },
             onDismiss = { toDelete = null },
         )
     }

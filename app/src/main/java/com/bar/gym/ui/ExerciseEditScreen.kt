@@ -19,6 +19,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bar.gym.GymApp
 import com.bar.gym.R
+import com.bar.gym.data.BodyGroup
 import com.bar.gym.data.Exercise
 import com.bar.gym.domain.formatKg
 import kotlinx.coroutines.launch
@@ -44,7 +45,8 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     var loaded by remember { mutableStateOf<Exercise?>(null) }
     var ready by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf(BodyGroup.OTHER) }
+    var bodyOpen by remember { mutableStateOf(false) }
     var weight by remember { mutableStateOf("0") }
     var sets by remember { mutableStateOf("3") }
     var reps by remember { mutableStateOf("10") }
@@ -56,12 +58,12 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     var confirmSave by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(emptyList<String>()) } // field values as loaded (the defaults, for a new exercise)
-    fun values() = listOf(name, body, weight, sets, reps, rest, work, notes)
+    fun values() = listOf(name, body.name, weight, sets, reps, rest, work, notes)
     fun dirty() = ready && values() != saved
 
     LaunchedEffect(id) {
         vm.load(id)?.let { e ->
-            loaded = e; name = e.name; body = e.bodyPart; weight = formatKg(e.weightKg)
+            loaded = e; name = e.name; body = BodyGroup.from(e.bodyPart); weight = formatKg(e.weightKg)
             sets = "${e.sets}"; reps = "${e.reps}"; rest = "${e.restSec}"; work = "${e.workSec}"; notes = e.notes
         }
         saved = values()
@@ -85,7 +87,7 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
         if (error != null) return
         if (loaded != null && dirty() && !confirmed) { confirmSave = true; return }
         vm.save(
-            Exercise(id = loaded?.id ?: 0, name = name.trim(), bodyPart = body.trim(), weightKg = w!!, sets = s!!, reps = r!!,
+            Exercise(id = loaded?.id ?: 0, name = name.trim(), bodyPart = body.name, weightKg = w!!, sets = s!!, reps = r!!,
                 restSec = rs!!, workSec = wk!!, notes = notes, archived = false),
             onDone,
         )
@@ -107,7 +109,23 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_name)) }, singleLine = true)
-            OutlinedTextField(body, { body = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_body_part)) }, singleLine = true)
+            ExposedDropdownMenuBox(bodyOpen, { bodyOpen = it }, Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    stringResource(body.labelRes), {}, Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(), readOnly = true,
+                    label = { Text(stringResource(R.string.label_body_part)) }, singleLine = true,
+                    leadingIcon = { BodyGroupIcon(body, contentDescription = null) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(bodyOpen) },
+                )
+                ExposedDropdownMenu(bodyOpen, { bodyOpen = false }) {
+                    BodyGroup.entries.forEach { g ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(g.labelRes)) },
+                            leadingIcon = { BodyGroupIcon(g, contentDescription = null) },
+                            onClick = { body = g; bodyOpen = false },
+                        )
+                    }
+                }
+            }
             OutlinedTextField(weight, { weight = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_weight_kg)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             OutlinedTextField(sets, { sets = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_sets)) }, singleLine = true,

@@ -19,8 +19,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +45,7 @@ import com.bar.gym.R
 import com.bar.gym.data.SessionExercise
 import com.bar.gym.data.SetLog
 import com.bar.gym.data.Workout
+import com.bar.gym.data.bodyGroup
 import com.bar.gym.domain.*
 import com.bar.gym.timer.RestTimer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -65,8 +68,10 @@ class WorkoutViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, share, emptyList())
     val names = dao.observeExercises().map { l -> l.associate { it.id to it.name } }
         .stateIn(viewModelScope, share, emptyMap())
+    val groups = dao.observeExercises().map { l -> l.associate { it.id to it.bodyGroup } }
+        .stateIn(viewModelScope, share, emptyMap())
 
-    /** Explicit choice (SessionExercise.id); null = use [defaultSelection]. Not persisted. */
+    /** Explicit choice (SessionExercise.id); null = no exercise selected, panel hidden. Not persisted. */
     val selectedId = MutableStateFlow<Long?>(null)
 
     fun setDone(item: SessionExercise, weight: Double, reps: Int) = viewModelScope.launch {
@@ -125,6 +130,7 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
     val items by vm.items.collectAsStateWithLifecycle()
     val logs by vm.logs.collectAsStateWithLifecycle()
     val names by vm.names.collectAsStateWithLifecycle()
+    val groups by vm.groups.collectAsStateWithLifecycle()
     val explicit by vm.selectedId.collectAsStateWithLifecycle()
     val view = LocalView.current
     DisposableEffect(view) {
@@ -148,7 +154,9 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
     var confirmAbort by remember { mutableStateOf(false) }
     val sorted = items.sortedBy { it.position }
     val next = nextUp(items, logs)
-    val selected = sorted.firstOrNull { it.id == explicit } ?: defaultSelection(items, logs) ?: sorted.firstOrNull()
+    val selected = sorted.firstOrNull { it.id == explicit }
+    val clock = rememberNow()
+    val resting by remember(workout.restEndsAt) { derivedStateOf { (workout.restEndsAt ?: 0L) > clock.value } }
     val total = items.sumOf { it.sets }
     val done = items.sumOf { doneSets(it, logs) }
 
@@ -159,22 +167,41 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     Column {
                         Text(workout.sessionName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val now by rememberNow()
-                        Text(formatClock((now - workout.startedAt) / 1000), style = MaterialTheme.typography.bodyMedium)
+                        val groupIcons = sessionBodyGroups(items, groups)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(formatClock((now - workout.startedAt) / 1000), style = MaterialTheme.typography.bodyMedium)
+                            if (groupIcons.isNotEmpty()) {
+                                Spacer(Modifier.width(8.dp))
+                                BodyGroupIcons(groupIcons, 20.dp)
+                            }
+                        }
                     }
                 },
                 actions = {
-                    TextButton(onClick = { confirmAbort = true }) { Text(stringResource(R.string.abort), color = MaterialTheme.colorScheme.error, fontSize = 18.sp) }
-                    TextButton(onClick = { confirmFinish = true }) { Text(stringResource(R.string.finish), fontSize = 18.sp) }
+                    var menu by remember { mutableStateOf(false) }
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.abort)) }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.finish), fontSize = 18.sp) },
+                            onClick = { menu = false; confirmFinish = true },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.abort), color = MaterialTheme.colorScheme.error, fontSize = 18.sp) },
+                            onClick = { menu = false; confirmAbort = true },
+                        )
+                    }
                 },
             )
         },
     ) { pad ->
         Column(Modifier.padding(pad).imePadding().fillMaxSize()) {
-            Text(
-                stringResource(R.string.workout_progress, done, total, stringResource(R.string.minutes_format, roundMinutes(remainingSeconds(items, logs)))),
-                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    stringResource(R.string.workout_progress, done, total, stringResource(R.string.minutes_format, roundMinutes(remainingSeconds(items, logs)))),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                LinearProgressIndicator(progress = { if (total == 0) 0f else done.toFloat() / total }, Modifier.fillMaxWidth().height(6.dp))
+            }
             RestBanner(workout, vm)
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth(),
@@ -204,8 +231,14 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                         }
                     }
                 }
+                item {
+                    val allDone = total > 0 && done >= total
+                    val mod = Modifier.fillMaxWidth().height(56.dp)
+                    if (allDone) Button({ confirmFinish = true }, mod) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
+                    else FilledTonalButton({ confirmFinish = true }, mod) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
+                }
             }
-            if (selected != null) {
+            if (selected != null && !resting) {
                 ExercisePanel(workout, selected, names[selected.exerciseId] ?: stringResource(R.string.removed_short), logs, vm)
             }
         }
@@ -286,8 +319,6 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
     var reps by remember(item.id, done) { mutableStateOf((prev?.reps ?: item.reps).toString()) }
     var last by remember(item.exerciseId) { mutableStateOf(emptyList<SetLog>()) }
     var confirmUndo by remember(item.id) { mutableStateOf(false) }
-    val now = rememberNow()
-    val resting by remember(workout.restEndsAt) { derivedStateOf { (workout.restEndsAt ?: 0L) > now.value } }
     LaunchedEffect(item.exerciseId, workout.id) { last = vm.dao.lastTimeLogs(item.exerciseId, workout.id) }
     val w = weight.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
     val r = reps.toIntOrNull()?.coerceAtLeast(1) ?: 1
@@ -303,6 +334,9 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                     if (done >= item.sets) stringResource(R.string.done_logged, done) else stringResource(R.string.set_n_of, done + 1, item.sets),
                     style = MaterialTheme.typography.titleMedium,
                 )
+                if (done > 0) IconButton(onClick = { confirmUndo = true }) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.undo_last_set))
+                }
             }
             if (last.isNotEmpty()) {
                 Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
@@ -311,10 +345,9 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                 { weight = formatKg((w - 2.5).coerceAtLeast(0.0)) }, { weight = formatKg(w + 2.5) })
             Stepper(stringResource(R.string.unit_reps), reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
                 { reps = (r - 1).coerceAtLeast(1).toString() }, { reps = (r + 1).toString() })
-            if (!resting) Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
+            Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
                 Text(stringResource(if (done >= item.sets) R.string.extra_set else R.string.set_done), fontSize = 22.sp)
             }
-            if (done > 0) TextButton(onClick = { confirmUndo = true }, Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.undo_last_set)) }
         }
     }
     if (confirmUndo && prev != null) {

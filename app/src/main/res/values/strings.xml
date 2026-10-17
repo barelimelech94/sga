@@ -88,6 +88,16 @@
     <string name="delete_exercise_title">Delete exercise?</string>
     <string name="delete_exercise_text">It will be removed from all sessions. Logged history is kept.</string>
 
+    <!-- body groups -->
+    <string name="body_chest">Chest</string>
+    <string name="body_back">Back</string>
+    <string name="body_shoulders">Shoulders</string>
+    <string name="body_rear_delts">Rear delts</string>
+    <string name="body_biceps">Biceps</string>
+    <string name="body_triceps">Triceps</string>
+    <string name="body_legs">Legs</string>
+    <string name="body_core">Core</string>
+
     <!-- history -->
     <string name="no_sets_yet">No sets logged yet</string>
     <string name="top_weight_title">Top set weight per workout</string>

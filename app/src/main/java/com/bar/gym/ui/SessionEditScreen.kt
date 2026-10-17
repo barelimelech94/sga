@@ -2,6 +2,8 @@ package com.bar.gym.ui
 
 import android.app.Application
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,7 @@ import com.bar.gym.R
 import com.bar.gym.data.Exercise
 import com.bar.gym.data.Session
 import com.bar.gym.data.SessionExercise
+import com.bar.gym.data.bodyGroup
 import com.bar.gym.domain.estimateSeconds
 import com.bar.gym.domain.formatKg
 import com.bar.gym.domain.roundMinutes
@@ -177,26 +180,34 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
     }
 
     if (showPicker) {
-        AlertDialog(
-            onDismissRequest = { showPicker = false },
-            title = { Text(stringResource(R.string.add_exercise)) },
-            text = {
-                LazyColumn {
-                    bank.groupBy { it.bodyPart }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (part, exs) ->
-                        item(key = "h$part") {
-                            Text(part.ifBlank { stringResource(R.string.other) }, Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleSmall)
+        ModalBottomSheet(onDismissRequest = { showPicker = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            Text(
+                stringResource(R.string.add_exercise),
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            LazyColumn(Modifier.weight(1f, fill = false), contentPadding = PaddingValues(bottom = 24.dp)) {
+                bank.groupBy { it.bodyGroup }.toSortedMap().forEach { (group, exs) ->
+                    item(key = "h$group") {
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 12.dp).background(MaterialTheme.colorScheme.secondaryContainer).padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BodyGroupIcon(group, tint = MaterialTheme.colorScheme.onSecondaryContainer, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(group.labelRes), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
                         }
-                        items(exs.size, key = { exs[it].id }) { k ->
-                            TextButton(onClick = { vm.add(exs[k]); showPicker = false }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                                Text(exs[k].name, Modifier.fillMaxWidth())
-                            }
+                    }
+                    items(exs.size, key = { exs[it].id }) { k ->
+                        val e = exs[k]
+                        Column(Modifier.fillMaxWidth().clickable { vm.add(e); showPicker = false }.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            Text(e.name, style = MaterialTheme.typography.titleMedium)
+                            Text(e.defaultsText(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) } },
-        )
+            }
+        }
     }
     removing?.let { r ->
         ConfirmDialog(

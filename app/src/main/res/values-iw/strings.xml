@@ -87,6 +87,16 @@
     <string name="delete_exercise_title">למחוק את התרגיל?</string>
     <string name="delete_exercise_text">התרגיל יוסר מכל האימונים. ההיסטוריה שנרשמה נשמרת.</string>
 
+    <!-- body groups -->
+    <string name="body_chest">חזה</string>
+    <string name="body_back">גב</string>
+    <string name="body_shoulders">כתפיים</string>
+    <string name="body_rear_delts">כתף אחורית</string>
+    <string name="body_biceps">יד קדמית</string>
+    <string name="body_triceps">יד אחורית</string>
+    <string name="body_legs">רגליים</string>
+    <string name="body_core">בטן</string>
+
     <!-- history -->
     <string name="no_sets_yet">עדיין לא נרשמו סטים</string>
     <string name="top_weight_title">משקל הסט הכבד ביותר בכל אימון</string>

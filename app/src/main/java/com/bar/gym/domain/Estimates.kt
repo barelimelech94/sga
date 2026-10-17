@@ -1,5 +1,6 @@
 package com.bar.gym.domain
 
+import com.bar.gym.data.BodyGroup
 import com.bar.gym.data.SessionExercise
 import com.bar.gym.data.SetLog
 import kotlin.math.roundToInt
@@ -42,3 +43,7 @@ fun historyPoints(logs: List<SetLog>, workoutDates: Map<Long, Long>): List<Histo
     logs.filter { it.workoutId in workoutDates }.groupBy { it.workoutId }.map { (id, ls) ->
         HistoryPoint(id, workoutDates.getValue(id), ls.maxOf { it.weightKg }, ls.sortedBy { it.setNumber })
     }.sortedBy { it.date }
+
+/** Distinct groups a session trains, in enum order. [BodyGroup.OTHER] and exercises missing from [groups] are left out. */
+fun sessionBodyGroups(items: List<SessionExercise>, groups: Map<Long, BodyGroup>): List<BodyGroup> =
+    items.mapNotNull { groups[it.exerciseId] }.filter { it != BodyGroup.OTHER }.distinct().sorted()
