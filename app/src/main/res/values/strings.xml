@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Gym</string>
+    <string name="app_name" translatable="false">SGA</string>
     <string name="lang_english" translatable="false">English</string>
     <string name="lang_hebrew" translatable="false">עברית</string>
 

@@ -10,14 +10,14 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".GymApp"
+        android:name=".SgApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         tools:targetApi="33"
-        android:theme="@style/Theme.Gym">
+        android:theme="@style/Theme.Sga">
         <activity
             android:name=".MainActivity"
             android:exported="true"

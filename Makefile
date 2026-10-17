@@ -22,7 +22,7 @@ install: device  ## Build and install (starts the emulator if no device is conne
 	./gradlew :app:installDebug
 
 run: install  ## Install and launch the app
-	$(ADB) shell am start -n com.bar.gym/.MainActivity
+	$(ADB) shell am start -n com.bar.sga/.MainActivity
 
 emulator:  ## Start the emulator in the background and wait for boot
 	$(SDK)/emulator/emulator -avd $(AVD) -no-audio -no-boot-anim >/dev/null 2>&1 &

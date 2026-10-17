@@ -1,4 +1,4 @@
-# Gym
+# SGA (Some Gym App)
 
 A personal workout tracker for Android. Plan your sessions, run a workout with a built-in rest timer, log every set, and watch your progress over time. Everything is stored on the device. There is no account, no server, and no network access.
 
@@ -11,7 +11,7 @@ A personal workout tracker for Android. Plan your sessions, run a workout with a
 - **Backup and restore.** Export all data to a JSON file and restore it later. Imports are validated and applied in one transaction, so a bad file never changes your data.
 - **Hebrew and English.** Full right-to-left support and an in-app language switch.
 - **Light and dark themes.** Follow the system or choose one in Settings. The UI uses the Rubik typeface.
-- **Seed data.** On first launch the database is seeded with a three-day ABC split (chest/shoulders/triceps, legs, back/rear delts/biceps), defined in [Seed.kt](app/src/main/java/com/bar/gym/data/Seed.kt).
+- **Seed data.** On first launch the database is seeded with a three-day ABC split (chest/shoulders/triceps, legs, back/rear delts/biceps), defined in [Seed.kt](app/src/main/java/com/bar/sga/data/Seed.kt).
 
 ## Tech stack
 
@@ -27,8 +27,8 @@ A personal workout tracker for Android. Plan your sessions, run a workout with a
 ## Project structure
 
 ```
-app/src/main/java/com/bar/gym/
-├── GymApp.kt, MainActivity.kt   # Application and single-activity entry point
+app/src/main/java/com/bar/sga/
+├── SgApp.kt, MainActivity.kt   # Application and single-activity entry point
 ├── data/                        # Room entities, DAO, database, seed data, backup
 ├── domain/Estimates.kt          # Pure logic: time estimates, next set, history points
 ├── timer/                       # Rest timer and alarm receiver
@@ -87,7 +87,7 @@ $SDK/emulator/emulator -avd gym -no-audio -no-boot-anim &
 # Wait until it has booted, then install and launch the app
 $SDK/platform-tools/adb wait-for-device
 ./gradlew :app:installDebug
-$SDK/platform-tools/adb shell am start -n com.bar.gym/.MainActivity
+$SDK/platform-tools/adb shell am start -n com.bar.sga/.MainActivity
 ```
 
 Add `-read-only -no-snapshot` to the emulator command to discard all changes when it closes. On Android 13+, allow notifications when prompted so the rest-timer alert works.

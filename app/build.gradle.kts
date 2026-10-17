@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.bar.gym"
+    namespace = "com.bar.sga"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.bar.gym"
+        applicationId = "com.bar.sga"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
