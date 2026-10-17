@@ -5,9 +5,11 @@ import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import com.bar.sga.R
 
-/** Fires when the rest alarm goes off. Touches no database: the in-app banner derives "Rest over" from restEndsAt. */
+/** Fires when the rest alarm goes off: shows "Rest over" and plays the chime. Touches no database: the in-app banner derives "Rest over" from restEndsAt. */
 class RestAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         RestTimer.ensureChannels(context)
@@ -23,5 +25,11 @@ class RestAlarmReceiver : BroadcastReceiver() {
             .setContentIntent(RestTimer.openAppIntent(context))
             .build()
         try { nm.notify(RestTimer.OVER_ID, n) } catch (_: Exception) { }
+        // keep the process alive while the chime plays; the timeout is a backstop well under the ~10s limit
+        val pending = goAsync()
+        var finished = false
+        val finish = { if (!finished) { finished = true; pending.finish() } }
+        Handler(Looper.getMainLooper()).postDelayed({ finish() }, 5_000)
+        RestTimer.playOverSound(context, finish)
     }
 }

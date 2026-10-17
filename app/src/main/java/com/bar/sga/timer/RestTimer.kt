@@ -8,9 +8,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
-import android.media.Ringtone
-import android.media.RingtoneManager
-import android.net.Uri
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Build
 import com.bar.sga.MainActivity
 import com.bar.sga.R
@@ -22,19 +22,17 @@ object RestTimer {
     const val ONGOING_ID = 1
     const val OVER_ID = 2
     const val ONGOING_CHANNEL = "rest_timer"
-    const val OVER_CHANNEL = "rest_over_chime"
+    const val OVER_CHANNEL = "rest_over_alert"
     private const val ALARM_REQUEST = 1
     private const val OPEN_REQUEST = 2
 
-    /** Bundled chime (res/raw/rest_over.wav), so it doesn't depend on the phone's default notification sound. */
-    private fun overSound(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.rest_over}")
-    // USAGE_ALARM plays at alarm volume, so it is audible with the ringer on vibrate or silent
+    // USAGE_ALARM plays on the alarm stream, which ringer silent/vibrate doesn't mute
     private val overAttrs = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
-    // Kept referenced so Ringtone's finalizer can't release its player mid-sound
-    private var ringtone: Ringtone? = null
+    // Kept referenced so the player isn't garbage-collected mid-sound
+    private var player: MediaPlayer? = null
 
     /** Idempotent. Channel settings are immutable after first creation. */
     fun ensureChannels(context: Context) {
@@ -42,6 +40,7 @@ object RestTimer {
         // old ids: a channel's sound can't be changed in place
         nm.deleteNotificationChannel("rest_over")
         nm.deleteNotificationChannel("rest_over_alarm")
+        nm.deleteNotificationChannel("rest_over_chime")
         nm.createNotificationChannel(
             NotificationChannel(ONGOING_CHANNEL, context.getString(R.string.channel_rest_timer), NotificationManager.IMPORTANCE_LOW).apply {
                 setSound(null, null)
@@ -52,17 +51,41 @@ object RestTimer {
             NotificationChannel(OVER_CHANNEL, context.getString(R.string.channel_rest_over), NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 400, 200, 400)
-                setSound(overSound(context), overAttrs)
+                // silent: the app plays the chime itself (playOverSound), because notification sounds
+                // are muted by ringer mode, Do Not Disturb and per-app sound settings on many phones
+                setSound(null, null)
             }
         )
     }
 
-    /** Plays the "Rest over" sound once, for when the notification that normally plays it can't be shown. */
-    fun playOverSound(context: Context) {
+    /**
+     * Plays the "Rest over" chime (res/raw/rest_over.wav) directly at alarm volume, briefly ducking any music.
+     * [onDone] runs once on the main thread when playback ends or fails.
+     */
+    fun playOverSound(context: Context, onDone: () -> Unit = {}) {
+        val app = context.applicationContext
+        val am = app.getSystemService(AudioManager::class.java)
+        val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).setAudioAttributes(overAttrs).build()
+        var done = false
+        fun end(mp: MediaPlayer?) {
+            if (done) return
+            done = true
+            mp?.release()
+            if (player === mp) player = null
+            am?.abandonAudioFocusRequest(focus)
+            onDone()
+        }
+        var mp: MediaPlayer? = null
         try {
-            // applicationContext: the Ringtone is held in a field and retains its Context, which must not be an Activity
-            ringtone = RingtoneManager.getRingtone(context.applicationContext, overSound(context))?.apply { audioAttributes = overAttrs; play() }
-        } catch (_: Exception) { }
+            val sessionId = am?.generateAudioSessionId() ?: AudioManager.AUDIO_SESSION_ID_GENERATE
+            mp = MediaPlayer.create(app, R.raw.rest_over, overAttrs, sessionId) ?: return end(null)
+            player?.release()
+            player = mp
+            mp.setOnCompletionListener { end(it) }
+            mp.setOnErrorListener { p, _, _ -> end(p); true }
+            am?.requestAudioFocus(focus)
+            mp.start()
+        } catch (_: Exception) { end(mp) }
     }
 
     fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(

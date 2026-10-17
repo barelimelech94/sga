@@ -277,12 +277,11 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
         val left = ends - System.currentTimeMillis()
         if (left > 0) {
             delay(left)
-            // the "Rest over" notification channel vibrates and rings; only do it here if it can't be shown
+            // the alarm receiver plays the chime; the "Rest over" notification vibrates, so only vibrate here if it can't be shown
             if (context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() == true) return@LaunchedEffect
             @Suppress("DEPRECATION")
             context.getSystemService(Vibrator::class.java)
                 ?.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
-            RestTimer.playOverSound(context)
         }
     }
     val leftMs = ends - now
