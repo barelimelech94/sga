@@ -148,6 +148,13 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
                 Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.import_backup)) }
             if (message.isNotEmpty()) Text(message, style = MaterialTheme.typography.bodyLarge)
+            val version = remember { app.packageManager.getPackageInfo(app.packageName, 0).versionName.orEmpty() }
+            Text(
+                stringResource(R.string.version_format, version),
+                Modifier.padding(top = 24.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
     pending?.let { b ->

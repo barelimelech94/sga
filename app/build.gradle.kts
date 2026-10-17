@@ -15,7 +15,8 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1"
+        // CI sets GITHUB_RUN_NUMBER, so the installed build matches its release tag (build-N).
+        versionName = "0.1 (" + (System.getenv("GITHUB_RUN_NUMBER")?.let { "build-$it" } ?: "local") + ")"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -163,4 +163,5 @@
     <string name="backup_invalid_reason">%1$s (%2$s)</string>
     <string name="backup_restored">הגיבוי שוחזר: %1$s, %2$s ו־%3$s</string>
     <string name="restore_failed">השחזור נכשל, הנתונים הקיימים נשמרו: %1$s</string>
+    <string name="version_format">גרסה %1$s</string>
 </resources>
