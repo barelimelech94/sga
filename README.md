@@ -2,6 +2,8 @@
 
 A personal workout tracker for Android. Plan your sessions, run a workout with a built-in rest timer, log every set, and watch your progress over time. Everything is stored on the device. There is no account, no server, and no network access.
 
+**[📲 Download the latest build (APK)](https://github.com/barelimelech94/sga/releases/latest/download/sga.apk)**. Every push builds a new one. Open this on your phone and install it over the current app; your data is kept.
+
 ## Features
 
 - **Sessions.** Build workout sessions (for example Push / Legs / Pull) from a reusable exercise bank. Each exercise has default weight, sets, reps, work time and rest time, which you can override per session. Reorder exercises by drag and drop.
