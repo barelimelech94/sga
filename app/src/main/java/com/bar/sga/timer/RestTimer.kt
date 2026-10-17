@@ -12,6 +12,8 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
+import android.os.SystemClock
+import android.widget.RemoteViews
 import com.bar.sga.MainActivity
 import com.bar.sga.R
 import com.bar.sga.data.GymDao
@@ -25,6 +27,7 @@ object RestTimer {
     const val OVER_CHANNEL = "rest_over_alert"
     private const val ALARM_REQUEST = 1
     private const val OPEN_REQUEST = 2
+    private const val BAR_MAX = 1000
 
     // USAGE_ALARM plays on the alarm stream, which ringer silent/vibrate doesn't mute
     private val overAttrs = AudioAttributes.Builder()
@@ -100,24 +103,55 @@ object RestTimer {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    private fun post(context: Context, endsAt: Long) {
-        ensureChannels(context)
-        val nm = context.getSystemService(NotificationManager::class.java)
-        nm?.cancel(OVER_ID) // stale "rest over" from a previous rest
-        val n = Notification.Builder(context, ONGOING_CHANNEL)
+    /** The "Resting" notification: big countdown that ticks on its own, plus a bar of the rest left. */
+    fun ongoingNotification(context: Context, startedAt: Long, endsAt: Long): Notification {
+        val now = System.currentTimeMillis()
+        val total = (endsAt - startedAt).coerceAtLeast(1)
+        val left = (endsAt - now).coerceIn(0, total)
+        val base = SystemClock.elapsedRealtime() + left
+        val progress = (BAR_MAX * left / total).toInt()
+        fun views(layout: Int) = RemoteViews(context.packageName, layout).apply {
+            setChronometer(R.id.rest_clock, base, null, true)
+            setChronometerCountDown(R.id.rest_clock, true)
+            setProgressBar(R.id.rest_bar, BAR_MAX, progress, false)
+        }
+        return Notification.Builder(context, ONGOING_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(context.getString(R.string.notif_resting))
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
-            .setWhen(endsAt)
-            .setShowWhen(true)
+            .setStyle(Notification.DecoratedCustomViewStyle())
+            .setCustomContentView(views(R.layout.notif_rest))
+            .setCustomBigContentView(views(R.layout.notif_rest_big))
+            .setShowWhen(false)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(openAppIntent(context))
             .build()
-        try { nm?.notify(ONGOING_ID, n) } catch (_: Exception) { }
+    }
+
+    /** Re-posts the "Resting" notification so the bar moves. Called every second by RestService. */
+    fun notifyOngoing(context: Context, startedAt: Long, endsAt: Long) {
+        try { context.getSystemService(NotificationManager::class.java)?.notify(ONGOING_ID, ongoingNotification(context, startedAt, endsAt)) } catch (_: Exception) { }
+    }
+
+    private fun post(context: Context, startedAt: Long, endsAt: Long, extend: Boolean) {
+        ensureChannels(context)
+        context.getSystemService(NotificationManager::class.java)?.cancel(OVER_ID) // stale "rest over" from a previous rest
+        val intent = Intent(context, RestService::class.java)
+            .putExtra(RestService.EXTRA_START, startedAt)
+            .putExtra(RestService.EXTRA_ENDS, endsAt)
+            .putExtra(RestService.EXTRA_EXTEND, extend)
+        try {
+            context.startForegroundService(intent)
+        } catch (_: Exception) {
+            // not allowed from the background: show it without the moving bar
+            notifyOngoing(context, startedAt, endsAt)
+        }
+    }
+
+    private fun stopService(context: Context) {
+        try { context.stopService(Intent(context, RestService::class.java)) } catch (_: Exception) { }
     }
 
     private fun schedule(context: Context, endsAt: Long) {
@@ -138,8 +172,10 @@ object RestTimer {
     suspend fun start(context: Context, dao: GymDao, workout: Workout, endsAt: Long) {
         // re-read so a stale [workout] never overwrites newer fields
         val w = dao.getWorkout(workout.id) ?: return
+        val now = System.currentTimeMillis()
+        val extend = (w.restEndsAt ?: 0L) > now // +30s on a running rest
         dao.updateWorkout(w.copy(restEndsAt = endsAt))
-        post(context, endsAt)
+        post(context, now, endsAt, extend)
         schedule(context, endsAt)
     }
 
@@ -148,6 +184,7 @@ object RestTimer {
         val w = dao.getWorkout(workout.id) ?: return
         dao.updateWorkout(w.copy(restEndsAt = null))
         context.getSystemService(AlarmManager::class.java)?.cancel(alarmIntent(context))
+        stopService(context)
         context.getSystemService(NotificationManager::class.java)?.run {
             cancel(ONGOING_ID)
             cancel(OVER_ID)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Expanded rest notification: larger countdown above a full-width bar. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/notif_resting"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+
+    <Chronometer
+        android:id="@+id/rest_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="48sp"
+        android:textStyle="bold" />
+
+    <ProgressBar
+        android:id="@+id/rest_bar"
+        style="@android:style/Widget.Material.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:max="1000"
+        android:maxHeight="10dp"
+        android:minHeight="10dp" />
+</LinearLayout>

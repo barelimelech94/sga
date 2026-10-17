@@ -14,6 +14,8 @@ class RestAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         RestTimer.ensureChannels(context)
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        // stops the bar updates; the service may lag the alarm while the device dozes
+        try { context.stopService(Intent(context, RestService::class.java)) } catch (_: Exception) { }
         nm.cancel(RestTimer.ONGOING_ID)
         val n = Notification.Builder(context, RestTimer.OVER_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)

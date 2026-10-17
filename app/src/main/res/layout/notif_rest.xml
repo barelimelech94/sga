@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Collapsed rest notification: big countdown + bar. Must fit the 48dp collapsed height. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <Chronometer
+        android:id="@+id/rest_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <ProgressBar
+        android:id="@+id/rest_bar"
+        style="@android:style/Widget.Material.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_weight="1"
+        android:max="1000"
+        android:maxHeight="6dp"
+        android:minHeight="6dp" />
+</LinearLayout>
