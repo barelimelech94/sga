@@ -55,11 +55,10 @@ jobs:
       # Never publish an APK the phone can't install as an update.
       - name: Check APK is signed with that key
         run: |
-          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
-          GOT=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          GOT=$(python3 .github/apk_cert_sha256.py app/build/outputs/apk/debug/app-debug.apk)
           echo "APK cert SHA-256: $GOT"
           if [ -z "$SGA_KEY_SHA256" ] || [ "$GOT" != "$SGA_KEY_SHA256" ]; then
-            echo "::error::APK is not signed with the DEBUG_KEYSTORE_B64 key (apk=${GOT:-none} key=${SGA_KEY_SHA256:-none} apksigner=$APKSIGNER)"; exit 1
+            echo "::error::APK is not signed with the DEBUG_KEYSTORE_B64 key (apk=${GOT:-none} key=${SGA_KEY_SHA256:-none})"; exit 1
           fi
 
       - name: Publish release
