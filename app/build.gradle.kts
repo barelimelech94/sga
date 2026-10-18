@@ -18,6 +18,16 @@ android {
         // CI sets GITHUB_RUN_NUMBER, so the installed build matches its release tag (build-N).
         versionName = "0.1 (" + (System.getenv("GITHUB_RUN_NUMBER")?.let { "build-$it" } ?: "local") + ")"
     }
+    // CI only: sign debug builds with the owner's Mac debug key (from the DEBUG_KEYSTORE_B64 secret),
+    // so every build installs over the last one. Unset locally, where the Mac's own ~/.android key is used.
+    System.getenv("SGA_DEBUG_KEYSTORE")?.let { path ->
+        signingConfigs.getByName("debug") {
+            storeFile = file(path)
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
