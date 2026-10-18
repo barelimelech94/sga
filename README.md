@@ -9,7 +9,7 @@ A personal workout tracker for Android. Plan your sessions, run a workout with a
 - **Sessions.** Build workout sessions (for example Push / Legs / Pull) from a reusable exercise bank. Each exercise has default weight, sets, reps, work time and rest time, which you can override per session. Reorder exercises by drag and drop.
 - **Guided workouts.** Start a session and tick off sets as you go. The app shows the next set, the weight and reps from last time, and the estimated time remaining. You can add extra sets, undo the last set, finish early or abort.
 - **Rest timer.** An exact-alarm rest countdown with +30s and Skip controls. It notifies you when rest is over, even if the app is in the background.
-- **History.** A per-exercise chart of top-set weight per workout, with the full set log for each date.
+- **History.** A workout log (every finished workout, newest first, with duration and the sets done per exercise), plus a per-exercise chart of top-set weight per workout with the full set log for each date.
 - **Backup and restore.** Export all data to a JSON file and restore it later. Imports are validated and applied in one transaction, so a bad file never changes your data.
 - **Hebrew and English.** Full right-to-left support and an in-app language switch.
 - **Light and dark themes.** Follow the system or choose one in Settings. The UI uses the Rubik typeface.

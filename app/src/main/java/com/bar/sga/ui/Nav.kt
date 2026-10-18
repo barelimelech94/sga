@@ -32,6 +32,7 @@ fun GymNav() {
                 onEdit = { nav.navigate("session/$it") },
                 onExercises = { nav.navigate("exercises") },
                 onSettings = { nav.navigate("settings") },
+                onHistory = { nav.navigate("workouts") },
             )
         }
         composable("session/{id}", longArg) { e ->
@@ -51,6 +52,7 @@ fun GymNav() {
         composable("history/{exerciseId}", listOf(navArgument("exerciseId") { type = NavType.LongType })) { e ->
             HistoryScreen(e.arguments!!.getLong("exerciseId"), onBack = { nav.popBackStack() })
         }
+        composable("workouts") { WorkoutLogScreen(onBack = { nav.popBackStack() }, onExercise = { nav.navigate("history/$it") }) }
         composable("settings") { SettingsScreen(onBack = { nav.popBackStack() }) }
     }
 }

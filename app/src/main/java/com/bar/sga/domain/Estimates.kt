@@ -3,6 +3,7 @@ package com.bar.sga.domain
 import com.bar.sga.data.BodyGroup
 import com.bar.sga.data.SessionExercise
 import com.bar.sga.data.SetLog
+import com.bar.sga.data.Workout
 import kotlin.math.roundToInt
 
 fun estimateSeconds(items: List<SessionExercise>): Int =
@@ -43,6 +44,19 @@ fun historyPoints(logs: List<SetLog>, workoutDates: Map<Long, Long>): List<Histo
     logs.filter { it.workoutId in workoutDates }.groupBy { it.workoutId }.map { (id, ls) ->
         HistoryPoint(id, workoutDates.getValue(id), ls.maxOf { it.weightKg }, ls.sortedBy { it.setNumber })
     }.sortedBy { it.date }
+
+data class WorkoutLog(val workout: Workout, val exercises: List<Pair<Long, List<SetLog>>>) {
+    val setCount get() = exercises.sumOf { it.second.size }
+}
+
+/** Keeps [workouts]' order. Each workout's exercises are in the order they were first done, sets in order done. */
+fun workoutLogs(workouts: List<Workout>, logs: List<SetLog>): List<WorkoutLog> {
+    val byWorkout = logs.groupBy { it.workoutId }
+    return workouts.map { w ->
+        val ls = byWorkout[w.id].orEmpty().sortedWith(compareBy({ it.completedAt }, { it.id }))
+        WorkoutLog(w, ls.groupBy { it.exerciseId }.toList())
+    }
+}
 
 /** Distinct groups a session trains, in enum order. [BodyGroup.OTHER] and exercises missing from [groups] are left out. */
 fun sessionBodyGroups(items: List<SessionExercise>, groups: Map<Long, BodyGroup>): List<BodyGroup> =

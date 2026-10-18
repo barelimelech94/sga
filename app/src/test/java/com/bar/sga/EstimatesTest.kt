@@ -71,4 +71,17 @@ class EstimatesTest {
         assertEquals(listOf(1, 2), p[1].sets.map { it.setNumber })
         assertTrue(historyPoints(emptyList(), emptyMap()).isEmpty())
     }
+
+    @Test fun workoutLogGrouping() {
+        val w1 = com.bar.sga.data.Workout(id = 1, sessionId = 1, sessionName = "A", startedAt = 0, finishedAt = 10)
+        val w2 = com.bar.sga.data.Workout(id = 2, sessionId = 1, sessionName = "A", startedAt = 20, finishedAt = 30)
+        fun l(id: Long, w: Long, ex: Long, t: Long) = SetLog(id = id, workoutId = w, exerciseId = ex, setNumber = 1, weightKg = 1.0, reps = 1, completedAt = t)
+        val logs = listOf(l(1, 1, 5, 3), l(2, 1, 7, 1), l(3, 1, 5, 2), l(4, 9, 5, 1))
+        val out = workoutLogs(listOf(w2, w1), logs)
+        assertEquals(listOf(2L, 1L), out.map { it.workout.id })
+        assertEquals(0, out[0].setCount)
+        assertEquals(listOf(7L, 5L), out[1].exercises.map { it.first })
+        assertEquals(listOf(3L, 1L), out[1].exercises[1].second.map { it.id })
+        assertEquals(3, out[1].setCount)
+    }
 }

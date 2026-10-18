@@ -103,6 +103,17 @@
     <string name="best_top_weight">המשקל הגבוה ביותר: %1$s ק״ג · %2$s</string>
     <string name="weight_reps">\u2066%1$s × %2$d\u2069</string>
 
+    <!-- workout history -->
+    <string name="workout_history">היסטוריית אימונים</string>
+    <string name="no_workouts_yet">עדיין אין אימונים שהסתיימו</string>
+    <string name="workout_log_summary">%1$s · %2$s</string>
+    <string name="deleted_exercise">תרגיל שנמחק</string>
+    <plurals name="set_count">
+        <item quantity="one">סט אחד</item>
+        <item quantity="two">שני סטים</item>
+        <item quantity="other">%d סטים</item>
+    </plurals>
+
     <!-- workout -->
     <string name="abort">ביטול אימון</string>
     <string name="workout_progress">%1$d מתוך %2$d סטים בוצעו · נותרו בערך %3$s</string>

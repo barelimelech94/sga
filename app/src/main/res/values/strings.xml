@@ -104,6 +104,16 @@
     <string name="best_top_weight">Best top weight: %1$s kg · %2$s</string>
     <string name="weight_reps">%1$s × %2$d</string>
 
+    <!-- workout history -->
+    <string name="workout_history">Workout history</string>
+    <string name="no_workouts_yet">No finished workouts yet</string>
+    <string name="workout_log_summary">%1$s · %2$s</string>
+    <string name="deleted_exercise">Deleted exercise</string>
+    <plurals name="set_count">
+        <item quantity="one">%d set</item>
+        <item quantity="other">%d sets</item>
+    </plurals>
+
     <!-- workout -->
     <string name="abort">Abort</string>
     <string name="workout_progress">%1$d / %2$d sets done · about %3$s left</string>

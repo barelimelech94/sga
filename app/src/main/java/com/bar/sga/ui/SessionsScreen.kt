@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,6 +73,7 @@ fun SessionsScreen(
     onEdit: (Long) -> Unit,
     onExercises: () -> Unit,
     onSettings: () -> Unit,
+    onHistory: () -> Unit,
     vm: SessionsViewModel = viewModel(),
 ) {
     val sessions by vm.sessions.collectAsStateWithLifecycle(emptyList())
@@ -89,6 +91,7 @@ fun SessionsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.sessions_title)) },
                 actions = {
+                    IconButton(onClick = onHistory) { Icon(Icons.Default.History, stringResource(R.string.workout_history)) }
                     IconButton(onClick = onExercises) { Icon(Icons.Default.FitnessCenter, stringResource(R.string.exercise_bank)) }
                     IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, stringResource(R.string.settings)) }
                 },

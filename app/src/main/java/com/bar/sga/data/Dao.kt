@@ -68,6 +68,12 @@ interface GymDao {
     suspend fun deleteLog(id: Long)
     @Query("SELECT * FROM Workout")
     fun observeWorkouts(): Flow<List<Workout>>
+    @Query("SELECT * FROM Workout WHERE finishedAt IS NOT NULL ORDER BY startedAt DESC, id DESC")
+    fun observeFinishedWorkouts(): Flow<List<Workout>>
+    @Query("SELECT * FROM SetLog ORDER BY completedAt, id")
+    fun observeAllLogs(): Flow<List<SetLog>>
+    @Query("SELECT * FROM Exercise")
+    fun observeAllExercisesIncludingArchived(): Flow<List<Exercise>>
     @Query("SELECT * FROM SetLog WHERE exerciseId = :exerciseId ORDER BY completedAt")
     fun observeLogsForExercise(exerciseId: Long): Flow<List<SetLog>>
     @Query(
