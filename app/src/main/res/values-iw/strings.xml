@@ -113,6 +113,15 @@
         <item quantity="two">שני סטים</item>
         <item quantity="other">%d סטים</item>
     </plurals>
+    <string name="previous_month">החודש הקודם</string>
+    <string name="next_month">החודש הבא</string>
+    <string name="show_all">הצגת הכול</string>
+    <string name="delete_workout_title">למחוק את האימון שבוצע?</string>
+    <plurals name="delete_workout_text">
+        <item quantity="one">האימון \"%2$s\" מ־%3$s והסט שנרשם בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+        <item quantity="two">האימון \"%2$s\" מ־%3$s ושני הסטים שנרשמו בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+        <item quantity="other">האימון \"%2$s\" מ־%3$s ו־%1$d הסטים שנרשמו בו יימחקו. אי אפשר לבטל פעולה זו.</item>
+    </plurals>
 
     <!-- workout -->
     <string name="abort">ביטול אימון</string>
