@@ -14,6 +14,8 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -347,7 +349,8 @@ private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewMod
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = container),
     ) {
-        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (over) 12.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+        val rowBottom by animateDpAsState(if (over) 12.dp else 0.dp, Motion.dpSpring, label = "restRowBottom")
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = rowBottom), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (over) stringResource(R.string.rest_over) else formatClock((dragSec ?: leftSec).toLong()),
                 Modifier.weight(1f),
@@ -360,7 +363,7 @@ private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewMod
             }
             Button(onClick = { vm.skipRest(workout) }, Modifier.height(56.dp)) { Text(stringResource(if (over) R.string.dismiss else R.string.skip)) }
         }
-        if (!over) {
+        AnimatedVisibility(!over, enter = Motion.reveal, exit = Motion.hide) {
             val label = stringResource(R.string.rest_time)
             val interaction = remember { MutableInteractionSource() }
             Slider(
@@ -369,9 +372,8 @@ private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewMod
                 onValueChangeFinished = { dragSec?.let { vm.setRest(workout, it) } },
                 valueRange = 0f..range.toFloat(),
                 interactionSource = interaction,
-                // the default handle (4 × 44 dp) and track (16 dp) are oversized for this banner
+                // default track; the default handle (4 × 44 dp) towers over it, so it is cut to just past the track
                 thumb = { SliderDefaults.Thumb(interaction, thumbSize = DpSize(4.dp, 24.dp)) },
-                track = { SliderDefaults.Track(it, Modifier.height(6.dp), thumbTrackGapSize = 4.dp, drawStopIndicator = null) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).semantics { contentDescription = label },
             )
         }
@@ -396,7 +398,15 @@ private fun ExercisePanel(
     // Drag down to collapse, up to expand (dragging only: taps on the panel never toggle it).
     var drag by remember { mutableFloatStateOf(0f) }
     val threshold = with(LocalDensity.current) { 48.dp.toPx() }
-    val dragState = rememberDraggableState { drag += it }
+    // Visual feedback: the panel follows the finger a little in the direction it can go, then springs back.
+    val nudge = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val isExpanded by rememberUpdatedState(expanded)
+    val dragState = rememberDraggableState { d ->
+        drag += d
+        val target = (if (isExpanded) drag.coerceAtLeast(0f) else drag.coerceAtMost(0f)) * 0.3f
+        scope.launch { nudge.snapTo(target) }
+    }
 
     Card(
         Modifier.fillMaxWidth().padding(8.dp)
@@ -407,13 +417,15 @@ private fun ExercisePanel(
                     if (drag > threshold || velocity > 1500f) onExpanded(false)
                     else if (drag < -threshold || velocity < -1500f) onExpanded(true)
                     drag = 0f
+                    nudge.animateTo(0f, Motion.floatSpring)
                 },
             )
             // follows the finger a little in the direction it can go, as feedback (after draggable, so it doesn't skew the drag)
-            .graphicsLayer { translationY = (if (expanded) drag.coerceAtLeast(0f) else drag.coerceAtMost(0f)) * 0.3f },
+            .graphicsLayer { translationY = nudge.value },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
-        Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // No spacedBy here: a gap next to the animated body would pop in/out at the end of the animation.
+        Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
             val toggleLabel = stringResource(if (expanded) R.string.collapse else R.string.expand)
             // Drag handle. Not tappable; screen readers get the toggle as an action instead.
             Box(
@@ -435,7 +447,7 @@ private fun ExercisePanel(
                 }
             }
             AnimatedVisibility(expanded, enter = Motion.reveal, exit = Motion.hide) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (last.isNotEmpty()) {
                         Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
                     }

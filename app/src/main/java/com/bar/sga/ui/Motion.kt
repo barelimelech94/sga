@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.navigation.NavBackStackEntry
 
@@ -24,6 +25,9 @@ import androidx.navigation.NavBackStackEntry
 object Motion {
     private const val PAGE_MS = 250
     private val sizeSpring = spring<IntSize>(stiffness = Spring.StiffnessMediumLow)
+    /** Same feel as [reveal], for values animated by hand (offsets, padding). */
+    val floatSpring = spring<Float>(stiffness = Spring.StiffnessMediumLow)
+    val dpSpring = spring<Dp>(stiffness = Spring.StiffnessMediumLow)
 
     /** Anything that appears in place: panels, banners, button rows, form fields. */
     val reveal: EnterTransition = expandVertically(sizeSpring, expandFrom = Alignment.Top) + fadeIn()

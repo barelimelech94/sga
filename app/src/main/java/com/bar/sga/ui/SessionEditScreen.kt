@@ -161,7 +161,7 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                         colors = selectableCardColors(sel),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 6.dp else 0.dp),
                     ) {
-                        Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = if (sel) 12.dp else 4.dp)) {
+                        Column(Modifier.padding(4.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = {}, Modifier.size(48.dp).draggableHandle()) { Icon(Icons.Default.DragHandle, stringResource(R.string.reorder)) }
                                 Column(Modifier.weight(1f)) {
@@ -171,7 +171,8 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                                 if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, stringResource(R.string.remove)) }
                             }
                             AnimatedVisibility(sel, enter = Motion.reveal, exit = Motion.hide) {
-                                Column(Modifier.padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // extra bottom space lives inside the animated part, so it grows with it instead of jumping
+                                Column(Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Field(stringResource(R.string.unit_kg), r.weight, KeyboardType.Decimal, Modifier.weight(1f)) { upd(r.copy(weight = it)) }
                                         Field(stringResource(R.string.field_sets), r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
