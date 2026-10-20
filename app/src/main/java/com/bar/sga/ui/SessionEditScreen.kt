@@ -3,12 +3,6 @@ package com.bar.sga.ui
 import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -164,7 +158,7 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                     Card(
                         onClick = { open = if (sel) null else r.key },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = if (sel) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.cardColors(),
+                        colors = selectableCardColors(sel),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 6.dp else 0.dp),
                     ) {
                         Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = if (sel) 12.dp else 4.dp)) {
@@ -176,11 +170,7 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                                 }
                                 if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, stringResource(R.string.remove)) }
                             }
-                            AnimatedVisibility(
-                                sel,
-                                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-                                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
-                            ) {
+                            AnimatedVisibility(sel, enter = Motion.reveal, exit = Motion.hide) {
                                 Column(Modifier.padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Field(stringResource(R.string.unit_kg), r.weight, KeyboardType.Decimal, Modifier.weight(1f)) { upd(r.copy(weight = it)) }

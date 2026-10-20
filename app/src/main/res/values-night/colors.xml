@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rest_bar_fill">#D0BCFF</color>
+    <color name="rest_bar_track">#4A4458</color>
+</resources>

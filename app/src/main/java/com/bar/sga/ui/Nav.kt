@@ -24,7 +24,13 @@ fun GymNav() {
             if (dao.getActiveWorkout() != null) nav.navigate("workout")
         }
     }
-    NavHost(nav, startDestination = "sessions") {
+    NavHost(
+        nav, startDestination = "sessions",
+        enterTransition = { with(Motion) { pageEnter() } },
+        exitTransition = { Motion.pageExit() },
+        popEnterTransition = { Motion.pagePopEnter() },
+        popExitTransition = { with(Motion) { pagePopExit() } },
+    ) {
         composable("sessions") {
             SessionsScreen(
                 onStart = { nav.navigate("workout") },

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rest notification bar, in the app's Material 3 palette (primary on secondaryContainer). -->
+<resources>
+    <color name="rest_bar_fill">#6750A4</color>
+    <color name="rest_bar_track">#E8DEF8</color>
+</resources>

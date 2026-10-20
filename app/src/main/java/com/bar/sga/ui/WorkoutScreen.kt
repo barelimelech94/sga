@@ -14,12 +14,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -44,7 +38,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -240,10 +239,7 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     val outlined = it.id == (selected ?: next)?.id
                     Card(
                         Modifier.fillMaxWidth().alpha(if (complete) 0.55f else 1f).clickable { vm.selectedId.value = it.id },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (it.id == selected?.id) MaterialTheme.colorScheme.secondaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                        ),
+                        colors = selectableCardColors(it.id == selected?.id),
                         border = if (outlined) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
                     ) {
                         Row(Modifier.padding(12.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -258,22 +254,23 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     }
                 }
                 item {
-                    val allDone = total > 0 && done >= total
-                    val mod = Modifier.fillMaxWidth().height(56.dp)
-                    if (allDone) Button({ confirmFinish = true }, mod) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
-                    else FilledTonalButton({ confirmFinish = true }, mod) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
+                    Button({ confirmFinish = true }, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
                 }
             }
+            // Collapsed/expanded is the user's choice and stays as is across exercises and rests.
+            var panelExpanded by rememberSaveable { mutableStateOf(true) }
             val panelItem = if (!resting) selected else null
             // keeps the last exercise so the panel can animate out after it is cleared
             val shownItem = remember { arrayOfNulls<SessionExercise>(1) }
             if (panelItem != null) shownItem[0] = panelItem
             AnimatedVisibility(
                 visible = panelItem != null,
-                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow), expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow), shrinkTowards = Alignment.Top) + fadeOut(),
+                enter = Motion.reveal,
+                exit = Motion.hide,
             ) {
-                shownItem[0]?.let { ExercisePanel(workout, it, names[it.exerciseId] ?: stringResource(R.string.removed_short), logs, vm) }
+                shownItem[0]?.let {
+                    ExercisePanel(workout, it, names[it.exerciseId] ?: stringResource(R.string.removed_short), logs, vm, panelExpanded) { e -> panelExpanded = e }
+                }
             }
         }
     }
@@ -323,13 +320,14 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
     if (ends != null) shownEnds[0] = ends
     AnimatedVisibility(
         visible = ends != null && ends - now >= -60_000, // stale "Rest over" is hidden after a minute
-        enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow), expandFrom = Alignment.Top) + fadeIn(),
-        exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow), shrinkTowards = Alignment.Top) + fadeOut(),
+        enter = Motion.reveal,
+        exit = Motion.hide,
     ) {
         RestCard(workout, shownEnds[0], now, vm)
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewModel) {
     val leftMs = ends - now
@@ -364,11 +362,16 @@ private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewMod
         }
         if (!over) {
             val label = stringResource(R.string.rest_time)
+            val interaction = remember { MutableInteractionSource() }
             Slider(
                 value = (dragSec ?: leftSec).toFloat().coerceAtMost(range.toFloat()),
                 onValueChange = { dragSec = ((it / 5).roundToInt() * 5) },
                 onValueChangeFinished = { dragSec?.let { vm.setRest(workout, it) } },
                 valueRange = 0f..range.toFloat(),
+                interactionSource = interaction,
+                // the default handle (4 × 44 dp) and track (16 dp) are oversized for this banner
+                thumb = { SliderDefaults.Thumb(interaction, thumbSize = DpSize(4.dp, 24.dp)) },
+                track = { SliderDefaults.Track(it, Modifier.height(6.dp), thumbTrackGapSize = 4.dp, drawStopIndicator = null) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).semantics { contentDescription = label },
             )
         }
@@ -376,7 +379,10 @@ private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewMod
 }
 
 @Composable
-private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String, logs: List<SetLog>, vm: WorkoutViewModel) {
+private fun ExercisePanel(
+    workout: Workout, item: SessionExercise, name: String, logs: List<SetLog>, vm: WorkoutViewModel,
+    expanded: Boolean, onExpanded: (Boolean) -> Unit,
+) {
     val mine = logs.filter { it.exerciseId == item.exerciseId }
     val done = mine.size
     val prev = mine.maxWithOrNull(compareBy({ it.completedAt }, { it.id }))
@@ -387,8 +393,7 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
     LaunchedEffect(item.exerciseId, workout.id) { last = vm.dao.lastTimeLogs(item.exerciseId, workout.id) }
     val w = weight.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
     val r = reps.toIntOrNull()?.coerceAtLeast(1) ?: 1
-    // Drag down to collapse, up to expand. A newly selected exercise always opens expanded.
-    var expanded by remember(item.id) { mutableStateOf(true) }
+    // Drag down to collapse, up to expand (dragging only: taps on the panel never toggle it).
     var drag by remember { mutableFloatStateOf(0f) }
     val threshold = with(LocalDensity.current) { 48.dp.toPx() }
     val dragState = rememberDraggableState { drag += it }
@@ -399,8 +404,8 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                 dragState, Orientation.Vertical,
                 onDragStarted = { drag = 0f },
                 onDragStopped = { velocity ->
-                    if (drag > threshold || velocity > 1500f) expanded = false
-                    else if (drag < -threshold || velocity < -1500f) expanded = true
+                    if (drag > threshold || velocity > 1500f) onExpanded(false)
+                    else if (drag < -threshold || velocity < -1500f) onExpanded(true)
                     drag = 0f
                 },
             )
@@ -410,8 +415,11 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
     ) {
         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val toggleLabel = stringResource(if (expanded) R.string.collapse else R.string.expand)
+            // Drag handle. Not tappable; screen readers get the toggle as an action instead.
             Box(
-                Modifier.fillMaxWidth().height(20.dp).clickable(onClickLabel = toggleLabel) { expanded = !expanded },
+                Modifier.fillMaxWidth().height(20.dp).semantics {
+                    customActions = listOf(CustomAccessibilityAction(toggleLabel) { onExpanded(!expanded); true })
+                },
                 contentAlignment = Alignment.Center,
             ) {
                 Box(Modifier.size(width = 36.dp, height = 4.dp).background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.4f), RoundedCornerShape(2.dp)))
@@ -426,11 +434,7 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                     Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.undo_last_set))
                 }
             }
-            AnimatedVisibility(
-                expanded,
-                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
-            ) {
+            AnimatedVisibility(expanded, enter = Motion.reveal, exit = Motion.hide) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (last.isNotEmpty()) {
                         Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)

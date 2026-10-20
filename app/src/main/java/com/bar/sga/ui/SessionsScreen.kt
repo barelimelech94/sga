@@ -1,6 +1,7 @@
 package com.bar.sga.ui
 
 import android.app.Application
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -121,8 +122,7 @@ fun SessionsScreen(
                 val selected = s.id == selectedId
                 Card(
                     Modifier.fillMaxWidth().clickable { selectedId = if (selected) null else s.id },
-                    colors = if (selected) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    else CardDefaults.cardColors(),
+                    colors = selectableCardColors(selected),
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         // Body-group icons sit in the top end corner (top right in English, top left in Hebrew).
@@ -139,7 +139,7 @@ fun SessionsScreen(
                             val groupIcons = sessionBodyGroups(list, groupOf)
                             if (groupIcons.isNotEmpty()) BodyGroupIcons(groupIcons, 24.dp, Modifier.padding(start = 8.dp, top = 2.dp))
                         }
-                        if (selected) {
+                        AnimatedVisibility(selected, enter = Motion.reveal, exit = Motion.hide) {
                             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text(stringResource(R.string.start)) }
                                 Spacer(Modifier.weight(1f))

@@ -23,6 +23,7 @@
         android:layout_marginStart="16dp"
         android:layout_weight="1"
         android:max="1000"
+        android:progressDrawable="@drawable/rest_bar_progress"
         android:maxHeight="6dp"
         android:minHeight="6dp" />
 </LinearLayout>
