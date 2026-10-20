@@ -187,4 +187,8 @@
     <string name="rest_time">זמן מנוחה</string>
     <string name="collapse">כיווץ</string>
     <string name="expand">הרחבה</string>
+    <string name="sum_kg">%1$s ק״ג</string>
+    <string name="sum_sets_reps">\u2066%1$d × %2$d\u2069</string>
+    <string name="sum_rest">מנוחה %1$d שנ׳</string>
+    <string name="sum_work">עבודה %1$d שנ׳</string>
 </resources>

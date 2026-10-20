@@ -2,6 +2,13 @@ package com.bar.sga.ui
 
 import android.app.Application
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -78,8 +85,11 @@ class SessionEditViewModel(app: Application) : AndroidViewModel(app) {
         savedRows = rows.toList()
     }
 
-    fun add(e: Exercise) {
-        rows.add(Row(nextKey++, e.id, formatKg(e.weightKg), "${e.sets}", "${e.reps}", "${e.restSec}", "${e.workSec}"))
+    /** Returns the new row's key. */
+    fun add(e: Exercise): Long {
+        val key = nextKey++
+        rows.add(Row(key, e.id, formatKg(e.weightKg), "${e.sets}", "${e.reps}", "${e.restSec}", "${e.workSec}"))
+        return key
     }
 
     /** Keys, not list indices: the list also holds the name field, the estimate and the add button. */
@@ -107,7 +117,8 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
     val bank by vm.bank.collectAsStateWithLifecycle(emptyList())
     var showPicker by remember { mutableStateOf(false) }
     var ready by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(emptySet<Long>()) }
+    // One card open at a time: closed cards show a summary line, the open one shows its fields.
+    var open by remember { mutableStateOf<Long?>(null) }
     var removing by remember { mutableStateOf<Row?>(null) }
     var confirmSave by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
@@ -148,26 +159,39 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
             }
             items(vm.rows, key = { it.key }) { r ->
                 ReorderableItem(reorder, key = r.key) { isDragging ->
-                    val sel = r.key in selected
+                    val sel = r.key == open
                     fun upd(n: Row) { val i = vm.rows.indexOfFirst { it.key == n.key }; if (i >= 0) vm.rows[i] = n }
                     Card(
-                        onClick = { selected = if (sel) selected - r.key else selected + r.key },
+                        onClick = { open = if (sel) null else r.key },
                         modifier = Modifier.fillMaxWidth(),
                         colors = if (sel) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.cardColors(),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 6.dp else 0.dp),
                     ) {
-                        Column(Modifier.padding(12.dp)) {
+                        Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = if (sel) 12.dp else 4.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = {}, Modifier.size(48.dp).draggableHandle()) { Icon(Icons.Default.DragHandle, stringResource(R.string.reorder)) }
-                                Text(names[r.exerciseId] ?: stringResource(R.string.removed_exercise), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                Column(Modifier.weight(1f)) {
+                                    Text(names[r.exerciseId] ?: stringResource(R.string.removed_exercise), style = MaterialTheme.typography.titleMedium)
+                                    if (!sel) Text(rowSummary(r), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 if (sel) IconButton(onClick = { removing = r }, Modifier.size(48.dp)) { Icon(Icons.Default.Close, stringResource(R.string.remove)) }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Field(stringResource(R.string.unit_kg), r.weight, KeyboardType.Decimal, Modifier.weight(1.2f)) { upd(r.copy(weight = it)) }
-                                Field(stringResource(R.string.field_sets), r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
-                                Field(stringResource(R.string.unit_reps), r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
-                                Field(stringResource(R.string.field_rest), r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
-                                Field(stringResource(R.string.field_work), r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
+                            AnimatedVisibility(
+                                sel,
+                                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
+                            ) {
+                                Column(Modifier.padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Field(stringResource(R.string.unit_kg), r.weight, KeyboardType.Decimal, Modifier.weight(1f)) { upd(r.copy(weight = it)) }
+                                        Field(stringResource(R.string.field_sets), r.sets, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(sets = it)) }
+                                        Field(stringResource(R.string.unit_reps), r.reps, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(reps = it)) }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Field(stringResource(R.string.field_rest), r.rest, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(rest = it)) }
+                                        Field(stringResource(R.string.field_work), r.work, KeyboardType.Number, Modifier.weight(1f)) { upd(r.copy(work = it)) }
+                                    }
+                                }
                             }
                         }
                     }
@@ -200,7 +224,7 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
                     }
                     items(exs.size, key = { exs[it].id }) { k ->
                         val e = exs[k]
-                        Column(Modifier.fillMaxWidth().clickable { vm.add(e); showPicker = false }.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Column(Modifier.fillMaxWidth().clickable { open = vm.add(e); showPicker = false }.padding(horizontal = 16.dp, vertical = 8.dp)) {
                             Text(e.name, style = MaterialTheme.typography.titleMedium)
                             Text(e.defaultsText(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -214,7 +238,7 @@ fun SessionEditScreen(id: Long, onDone: () -> Unit, vm: SessionEditViewModel = v
             title = stringResource(R.string.remove_exercise_title),
             text = stringResource(R.string.remove_exercise_text, names[r.exerciseId] ?: stringResource(R.string.removed_exercise)),
             confirm = stringResource(R.string.remove),
-            onConfirm = { vm.rows.removeAll { it.key == r.key }; selected = selected - r.key; removing = null },
+            onConfirm = { vm.rows.removeAll { it.key == r.key }; if (open == r.key) open = null; removing = null },
             onDismiss = { removing = null },
         )
     }
@@ -245,4 +269,16 @@ private fun Field(label: String, value: String, type: KeyboardType, modifier: Mo
         value, onChange, modifier, label = { Text(label, maxLines = 1) }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = type),
     )
+}
+
+/** One line for a closed card, e.g. "60 kg · 3 × 10 · rest 90s"; zero weight, rest and work are left out. */
+@Composable
+private fun rowSummary(r: Row): String {
+    val x = r.toItem(0, 0)
+    return listOfNotNull(
+        if (x.weightKg > 0) stringResource(R.string.sum_kg, formatKg(x.weightKg)) else null,
+        stringResource(R.string.sum_sets_reps, x.sets, x.reps),
+        if (x.workSec > 0) stringResource(R.string.sum_work, x.workSec) else null,
+        if (x.restSec > 0) stringResource(R.string.sum_rest, x.restSec) else null,
+    ).joinToString(" · ")
 }
