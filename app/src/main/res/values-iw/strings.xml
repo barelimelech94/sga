@@ -184,4 +184,7 @@
     <string name="backup_restored">הגיבוי שוחזר: %1$s, %2$s ו־%3$s</string>
     <string name="restore_failed">השחזור נכשל, הנתונים הקיימים נשמרו: %1$s</string>
     <string name="version_format">גרסה %1$s</string>
+    <string name="rest_time">זמן מנוחה</string>
+    <string name="collapse">כיווץ</string>
+    <string name="expand">הרחבה</string>
 </resources>

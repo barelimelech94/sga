@@ -12,7 +12,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +42,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,6 +69,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Wrapper so "not loaded yet" (null) differs from "no active workout" (Loaded(null)). */
 class Loaded(val workout: Workout?)
@@ -96,6 +114,12 @@ class WorkoutViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addRest(w: Workout, endsAt: Long) = viewModelScope.launch { RestTimer.start(getApplication(), dao, w, endsAt + 30_000) }
     fun skipRest(w: Workout) = viewModelScope.launch { RestTimer.cancel(getApplication(), dao, w) }
+
+    /** From the rest slider: [seconds] of rest left from now; 0 ends the rest. */
+    fun setRest(w: Workout, seconds: Int) = viewModelScope.launch {
+        if (seconds <= 0) RestTimer.cancel(getApplication(), dao, w)
+        else RestTimer.start(getApplication(), dao, w, System.currentTimeMillis() + seconds * 1000L)
+    }
 
     fun finish() = viewModelScope.launch {
         val w = dao.getActiveWorkout() ?: return@launch
@@ -240,8 +264,16 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     else FilledTonalButton({ confirmFinish = true }, mod) { Text(stringResource(R.string.finish), fontSize = 20.sp) }
                 }
             }
-            if (selected != null && !resting) {
-                ExercisePanel(workout, selected, names[selected.exerciseId] ?: stringResource(R.string.removed_short), logs, vm)
+            val panelItem = if (!resting) selected else null
+            // keeps the last exercise so the panel can animate out after it is cleared
+            val shownItem = remember { arrayOfNulls<SessionExercise>(1) }
+            if (panelItem != null) shownItem[0] = panelItem
+            AnimatedVisibility(
+                visible = panelItem != null,
+                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow), expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow), shrinkTowards = Alignment.Top) + fadeOut(),
+            ) {
+                shownItem[0]?.let { ExercisePanel(workout, it, names[it.exerciseId] ?: stringResource(R.string.removed_short), logs, vm) }
             }
         }
     }
@@ -271,12 +303,12 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
 
 @Composable
 private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
-    val ends = workout.restEndsAt ?: return
+    val ends = workout.restEndsAt
     val now by rememberNow()
     val context = LocalContext.current
     // Vibrate only if the countdown was still running when this effect started (not on resume after it ended).
     LaunchedEffect(ends) {
-        val left = ends - System.currentTimeMillis()
+        val left = (ends ?: return@LaunchedEffect) - System.currentTimeMillis()
         if (left > 0) {
             delay(left)
             // the alarm receiver plays the chime; the "Rest over" notification vibrates, so only vibrate here if it can't be shown
@@ -286,18 +318,40 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
                 ?.vibrate(VibrationEffect.createOneShot(600, VibrationEffect.DEFAULT_AMPLITUDE))
         }
     }
+    // keeps the last end time so the banner can animate out after the rest is skipped
+    val shownEnds = remember { LongArray(1) }
+    if (ends != null) shownEnds[0] = ends
+    AnimatedVisibility(
+        visible = ends != null && ends - now >= -60_000, // stale "Rest over" is hidden after a minute
+        enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow), expandFrom = Alignment.Top) + fadeIn(),
+        exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow), shrinkTowards = Alignment.Top) + fadeOut(),
+    ) {
+        RestCard(workout, shownEnds[0], now, vm)
+    }
+}
+
+@Composable
+private fun RestCard(workout: Workout, ends: Long, now: Long, vm: WorkoutViewModel) {
     val leftMs = ends - now
-    if (leftMs < -60_000) return // stale "Rest over" is hidden after a minute
     val over = leftMs <= 0
+    val leftSec = ((leftMs + 999) / 1000).toInt().coerceAtLeast(0)
+    // Slider position while the finger is on it; kept until the new end time arrives so the thumb doesn't jump back.
+    var dragSec by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(ends) { dragSec = null }
+    // Slider range only grows (3 min, or the rest rounded up to a minute), so the thumb moves steadily as time runs down.
+    var maxSec by remember(workout.id) { mutableIntStateOf(180) }
+    val range = maxOf(maxSec, (leftSec + 59) / 60 * 60)
+    SideEffect { if (dragSec == null && range > maxSec) maxSec = range }
+    val container by animateColorAsState(
+        if (over) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer, label = "restColor",
+    )
     Card(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (over) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = container),
     ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (over) 12.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (over) stringResource(R.string.rest_over) else formatClock((leftMs + 999) / 1000),
+                if (over) stringResource(R.string.rest_over) else formatClock((dragSec ?: leftSec).toLong()),
                 Modifier.weight(1f),
                 fontSize = if (over) 28.sp else 44.sp,
                 style = MaterialTheme.typography.displaySmall,
@@ -307,6 +361,16 @@ private fun RestBanner(workout: Workout, vm: WorkoutViewModel) {
                 Spacer(Modifier.width(8.dp))
             }
             Button(onClick = { vm.skipRest(workout) }, Modifier.height(56.dp)) { Text(stringResource(if (over) R.string.dismiss else R.string.skip)) }
+        }
+        if (!over) {
+            val label = stringResource(R.string.rest_time)
+            Slider(
+                value = (dragSec ?: leftSec).toFloat().coerceAtMost(range.toFloat()),
+                onValueChange = { dragSec = ((it / 5).roundToInt() * 5) },
+                onValueChangeFinished = { dragSec?.let { vm.setRest(workout, it) } },
+                valueRange = 0f..range.toFloat(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).semantics { contentDescription = label },
+            )
         }
     }
 }
@@ -323,12 +387,35 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
     LaunchedEffect(item.exerciseId, workout.id) { last = vm.dao.lastTimeLogs(item.exerciseId, workout.id) }
     val w = weight.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
     val r = reps.toIntOrNull()?.coerceAtLeast(1) ?: 1
+    // Drag down to collapse, up to expand. A newly selected exercise always opens expanded.
+    var expanded by remember(item.id) { mutableStateOf(true) }
+    var drag by remember { mutableFloatStateOf(0f) }
+    val threshold = with(LocalDensity.current) { 48.dp.toPx() }
+    val dragState = rememberDraggableState { drag += it }
 
     Card(
-        Modifier.fillMaxWidth().padding(8.dp),
+        Modifier.fillMaxWidth().padding(8.dp)
+            .draggable(
+                dragState, Orientation.Vertical,
+                onDragStarted = { drag = 0f },
+                onDragStopped = { velocity ->
+                    if (drag > threshold || velocity > 1500f) expanded = false
+                    else if (drag < -threshold || velocity < -1500f) expanded = true
+                    drag = 0f
+                },
+            )
+            // follows the finger a little in the direction it can go, as feedback (after draggable, so it doesn't skew the drag)
+            .graphicsLayer { translationY = (if (expanded) drag.coerceAtLeast(0f) else drag.coerceAtMost(0f)) * 0.3f },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val toggleLabel = stringResource(if (expanded) R.string.collapse else R.string.expand)
+            Box(
+                Modifier.fillMaxWidth().height(20.dp).clickable(onClickLabel = toggleLabel) { expanded = !expanded },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(Modifier.size(width = 36.dp, height = 4.dp).background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.4f), RoundedCornerShape(2.dp)))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1)
                 Text(
@@ -339,15 +426,23 @@ private fun ExercisePanel(workout: Workout, item: SessionExercise, name: String,
                     Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.undo_last_set))
                 }
             }
-            if (last.isNotEmpty()) {
-                Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
-            }
-            Stepper(stringResource(R.string.unit_kg), weight, KeyboardType.Decimal, { weight = it },
-                { weight = formatKg((w - 2.5).coerceAtLeast(0.0)) }, { weight = formatKg(w + 2.5) })
-            Stepper(stringResource(R.string.unit_reps), reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
-                { reps = (r - 1).coerceAtLeast(1).toString() }, { reps = (r + 1).toString() })
-            Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
-                Text(stringResource(if (done >= item.sets) R.string.extra_set else R.string.set_done), fontSize = 22.sp)
+            AnimatedVisibility(
+                expanded,
+                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (last.isNotEmpty()) {
+                        Text(stringResource(R.string.last_time, last.map { stringResource(R.string.weight_reps, formatKg(it.weightKg), it.reps) }.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    Stepper(stringResource(R.string.unit_kg), weight, KeyboardType.Decimal, { weight = it },
+                        { weight = formatKg((w - 2.5).coerceAtLeast(0.0)) }, { weight = formatKg(w + 2.5) })
+                    Stepper(stringResource(R.string.unit_reps), reps, KeyboardType.Number, { reps = it.filter(Char::isDigit) },
+                        { reps = (r - 1).coerceAtLeast(1).toString() }, { reps = (r + 1).toString() })
+                    Button(onClick = { vm.setDone(item, w, r) }, Modifier.fillMaxWidth().height(64.dp)) {
+                        Text(stringResource(if (done >= item.sets) R.string.extra_set else R.string.set_done), fontSize = 22.sp)
+                    }
+                }
             }
         }
     }

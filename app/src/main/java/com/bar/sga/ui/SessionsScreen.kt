@@ -125,17 +125,22 @@ fun SessionsScreen(
                     else CardDefaults.cardColors(),
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(s.name, style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            stringResource(
-                                R.string.session_summary,
-                                pluralStringResource(R.plurals.exercise_count, list.size, list.size),
-                                stringResource(R.string.minutes_format, roundMinutes(estimateSeconds(list))),
-                            ), style = MaterialTheme.typography.bodyLarge)
-                        val groupIcons = sessionBodyGroups(list, groupOf)
-                        if (groupIcons.isNotEmpty()) BodyGroupIcons(groupIcons, 28.dp, Modifier.padding(top = 8.dp, bottom = if (selected) 8.dp else 0.dp))
+                        // Body-group icons sit in the top end corner (top right in English, top left in Hebrew).
+                        Row(verticalAlignment = Alignment.Top) {
+                            Column(Modifier.weight(1f)) {
+                                Text(s.name, style = MaterialTheme.typography.titleLarge)
+                                Text(
+                                    stringResource(
+                                        R.string.session_summary,
+                                        pluralStringResource(R.plurals.exercise_count, list.size, list.size),
+                                        stringResource(R.string.minutes_format, roundMinutes(estimateSeconds(list))),
+                                    ), style = MaterialTheme.typography.bodyLarge)
+                            }
+                            val groupIcons = sessionBodyGroups(list, groupOf)
+                            if (groupIcons.isNotEmpty()) BodyGroupIcons(groupIcons, 24.dp, Modifier.padding(start = 8.dp, top = 2.dp))
+                        }
                         if (selected) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Button(onClick = { vm.start(s, onStart) { conflict = it to s } }, Modifier.height(48.dp)) { Text(stringResource(R.string.start)) }
                                 Spacer(Modifier.weight(1f))
                                 IconButton(onClick = { onEdit(s.id) }, Modifier.size(48.dp)) { Icon(Icons.Default.Edit, stringResource(R.string.edit)) }

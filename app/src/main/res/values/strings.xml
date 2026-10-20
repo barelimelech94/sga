@@ -181,4 +181,7 @@
     <string name="backup_restored">Backup restored: %1$s, %2$s, %3$s</string>
     <string name="restore_failed">Restore failed, existing data was kept: %1$s</string>
     <string name="version_format">Version %1$s</string>
+    <string name="rest_time">Rest time</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
 </resources>
