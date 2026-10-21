@@ -78,7 +78,6 @@
     <string name="label_reps">Reps</string>
     <string name="label_rest_sec">Rest (sec)</string>
     <string name="label_work_sec">Work (sec)</string>
-    <string name="label_notes">Notes</string>
     <string name="err_name_required">Name is required</string>
     <string name="err_weight">Weight must be a number, 0 or more</string>
     <string name="err_sets">Sets must be at least 1</string>

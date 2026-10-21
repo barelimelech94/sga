@@ -77,7 +77,6 @@
     <string name="label_reps">חזרות</string>
     <string name="label_rest_sec">מנוחה (שנ׳)</string>
     <string name="label_work_sec">עבודה (שנ׳)</string>
-    <string name="label_notes">הערות</string>
     <string name="err_name_required">יש להזין שם</string>
     <string name="err_weight">המשקל חייב להיות מספר, 0 או יותר</string>
     <string name="err_sets">מספר הסטים חייב להיות לפחות 1</string>

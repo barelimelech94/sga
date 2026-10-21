@@ -52,19 +52,18 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
     var reps by remember { mutableStateOf("10") }
     var rest by remember { mutableStateOf("120") }
     var work by remember { mutableStateOf("40") }
-    var notes by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<Int?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmSave by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(emptyList<String>()) } // field values as loaded (the defaults, for a new exercise)
-    fun values() = listOf(name, body.name, weight, sets, reps, rest, work, notes)
+    fun values() = listOf(name, body.name, weight, sets, reps, rest, work)
     fun dirty() = ready && values() != saved
 
     LaunchedEffect(id) {
         vm.load(id)?.let { e ->
             loaded = e; name = e.name; body = BodyGroup.from(e.bodyPart); weight = formatKg(e.weightKg)
-            sets = "${e.sets}"; reps = "${e.reps}"; rest = "${e.restSec}"; work = "${e.workSec}"; notes = e.notes
+            sets = "${e.sets}"; reps = "${e.reps}"; rest = "${e.restSec}"; work = "${e.workSec}"
         }
         saved = values()
         ready = true
@@ -88,7 +87,7 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
         if (loaded != null && dirty() && !confirmed) { confirmSave = true; return }
         vm.save(
             Exercise(id = loaded?.id ?: 0, name = name.trim(), bodyPart = body.name, weightKg = w!!, sets = s!!, reps = r!!,
-                restSec = rs!!, workSec = wk!!, notes = notes, archived = false),
+                restSec = rs!!, workSec = wk!!, archived = false),
             onDone,
         )
     }
@@ -136,7 +135,6 @@ fun ExerciseEditScreen(id: Long, onDone: () -> Unit, vm: ExerciseEditViewModel =
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             OutlinedTextField(work, { work = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_work_sec)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.label_notes)) })
             error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
             Button(onClick = { save() }, Modifier.fillMaxWidth().height(52.dp)) { Text(stringResource(R.string.save)) }
             if (loaded != null) {

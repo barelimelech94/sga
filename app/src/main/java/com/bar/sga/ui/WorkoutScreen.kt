@@ -93,6 +93,17 @@ class WorkoutViewModel(app: Application) : AndroidViewModel(app) {
     /** Explicit choice (SessionExercise.id); null = no exercise selected, panel hidden. Not persisted. */
     val selectedId = MutableStateFlow<Long?>(null)
 
+    init {
+        // Resuming a workout with sets logged: reopen the exercise in progress, not the next planned one.
+        viewModelScope.launch {
+            val w = active.first() ?: return@launch
+            val ls = dao.observeLogs(w.id).first()
+            if (ls.isEmpty()) return@launch
+            val its = dao.observeSessionExercises(w.sessionId).first()
+            if (selectedId.value == null) selectedId.value = defaultSelection(its, ls)?.id
+        }
+    }
+
     fun setDone(item: SessionExercise, weight: Double, reps: Int) = viewModelScope.launch {
         val w = dao.getActiveWorkout() ?: return@launch
         val now = System.currentTimeMillis()
@@ -179,6 +190,7 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
     var confirmAbort by remember { mutableStateOf(false) }
     val sorted = items.sortedBy { it.position }
     val next = nextUp(items, logs)
+    val current = defaultSelection(items, logs)
     val selected = sorted.firstOrNull { it.id == explicit }
     val clock = rememberNow()
     val resting by remember(workout.restEndsAt) { derivedStateOf { (workout.restEndsAt ?: 0L) > clock.value } }
@@ -237,8 +249,8 @@ fun WorkoutScreen(onGone: () -> Unit, vm: WorkoutViewModel = viewModel()) {
                     val d = doneSets(it, logs)
                     val complete = d >= it.sets
                     val isNext = it.id == next?.id
-                    // The border marks the exercise in the panel; with none open, it points at what's next.
-                    val outlined = it.id == (selected ?: next)?.id
+                    // The border marks the exercise in the panel; with none open, the one in progress or else what's next.
+                    val outlined = it.id == (selected ?: current)?.id
                     Card(
                         Modifier.fillMaxWidth().alpha(if (complete) 0.55f else 1f).clickable { vm.selectedId.value = it.id },
                         colors = selectableCardColors(it.id == selected?.id),

@@ -30,7 +30,7 @@ abstract class GymDb : RoomDatabase() {
                     val exerciseId = db.insert("Exercise", 0, ContentValues().apply {
                         put("name", e.name); put("bodyPart", e.bodyPart); put("weightKg", e.weightKg)
                         put("sets", e.sets); put("reps", e.reps); put("restSec", e.restSec)
-                        put("workSec", e.workSec); put("notes", e.notes); put("archived", 0)
+                        put("workSec", e.workSec); put("notes", ""); put("archived", 0)
                     })
                     db.insert("SessionExercise", 0, ContentValues().apply {
                         put("sessionId", sessionId); put("exerciseId", exerciseId); put("position", i)

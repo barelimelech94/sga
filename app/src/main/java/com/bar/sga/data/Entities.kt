@@ -17,6 +17,7 @@ data class Exercise(
     val reps: Int,
     val restSec: Int,
     val workSec: Int,
+    /** Unused (no longer shown or edited). Kept so the Room schema and old backups stay compatible. */
     val notes: String = "",
     val archived: Boolean = false,
 )
